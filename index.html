@@ -1,30 +1,349 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World!</title>
-    <link rel="stylesheet" href="style.css">
+    <title>С 8 Марта!</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #ff758c, #ff7eb3);
+            text-align: center;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        h1 {
+            font-size: 3rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        #changingText {
+            font-size: 1.8rem;
+            max-width: 600px;
+            margin-top: 20px;
+            font-weight: bold;
+            opacity: 0;
+            animation: fadeInOut 5s infinite;
+        }
+        .hearts {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        .heart {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            color: #ff1493;
+            font-size: 2rem;
+            opacity: 0.8;
+            animation: fall linear infinite;
+        }
+        .cat {
+            cursor: pointer;
+            max-width: 300px;
+            margin-top: 20px;
+            transition: transform 0.3s ease;
+        }
+        .cat:hover {
+            transform: scale(1.1);
+        }
+        .bigHeart {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10rem;
+            color: #ff1493;
+            opacity: 0;
+            animation: showHeart 0.3s forwards;
+        }
+        .clickText {
+            position: absolute;
+            bottom: 10px;
+            left: 100%;
+            margin-left: 10px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+        }
+        .warningButton {
+            position: fixed;
+            bottom: 30px;
+            background-color: #ff1493;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .warningButton:hover {
+            background-color: #d11272;
+        }
+        .confirmationBox {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.5rem;
+            text-align: center;
+            display: none;
+        }
+        .confirmationBox p {
+            margin-bottom: 20px;
+        }
+        .confirmationBox img {
+            width: 150px;
+            margin-bottom: 20px;
+        }
+        .confirmationButton {
+            background-color: #ff1493;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            font-size: 1.2rem;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .confirmationButton:hover {
+            background-color: #d11272;
+        }
+        .errorMessage {
+            color: #ff0000;
+            font-weight: bold;
+            margin-top: 10px;
+            display: none;
+        }
+        .finalContent {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            opacity: 0;
+            animation: fadeIn 2s forwards;
+        }
+        .finalGif {
+            width: 300px;
+            margin-right: 20px;
+            opacity: 0;
+            animation: slideInLeft 1.5s forwards 0.5s;
+        }
+        .finalText {
+            font-size: 1.5rem;
+            font-weight: bold;
+            opacity: 0;
+            animation: slideInRight 1.5s forwards 1s;
+            text-align: left;
+            line-height: 1.6;
+        }
+        .runningNoButton {
+            position: absolute;
+            transition: all 0.1s ease;
+        }
+        @keyframes fall {
+            from {
+                transform: translateY(-100%);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; }
+            20%, 80% { opacity: 1; }
+        }
+        @keyframes showHeart {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(3);
+            }
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        @keyframes slideInLeft {
+            0% {
+                opacity: 0;
+                transform: translateX(-100%);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        @keyframes slideInRight {
+            0% {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1 id="text"></h1>
+
+    <h1>Йоооооооууууууууууууууууууууууууууууууу С 8 Марта! 💐</h1>
+    <p id="changingText">Пусть этот день будет наполнен светом и радостью! 💖</p>
+
+    <div class="hearts"></div>
+
+    <div style="position: relative;">
+        <img src="images/cat1.png" alt="Котик" class="cat" id="catImage">
+        <div class="clickText">Нажми)))))</div>
+    </div>
+
+    <button class="warningButton" onclick="showWarning()">Не нажимать</button>
+
+    <div class="confirmationBox" id="confirmationBox">
+        <p id="confirmationText">Ты точно уверена? Ответь на вопросы:</p>
+        <img id="currentCatImage" src="images/cat3.png" alt="Котик">
+        <button class="confirmationButton" onclick="answerQuestion('yes')">Да</button>
+        <button class="confirmationButton" id="noButton" onclick="answerQuestion('no')">Нет</button>
+        <div class="errorMessage" id="errorMessage">Ошибочная ошибка! Попробуй ещё раз! 😜</div>
+    </div>
+
+    <div class="finalContent" id="finalContent" style="display: none;">
+        <img src="gifs/celebration.gif" alt="Праздник" class="finalGif">
+        <div class="finalText">
+            С 8 Марта! 💐<br><br>
+            Сегодня твой день, и я не могу не поздравить тебя с этим замечательным праздником!<br>
+            Ты — удивительный человек, с которым всегда приятно общаться, даже если мы не видимся так часто, как хотелось бы.<br><br>
+            Пусть этот день принесет тебе только положительные эмоции, теплые слова и приятные сюрпризы.<br>
+            Пусть в твоей жизни будет больше поводов для радости, вдохновения и счастья.<br>
+            Пусть каждый день будет наполнен яркими моментами, а рядом всегда будут люди, которые ценят и поддерживают тебя.<br><br>
+            Спасибо за твою поддержку, дружбу и за то, что ты просто есть.<br><br>
+            Пусть твоя жизнь будет такой же яркой, как твоя улыбка, а если вдруг станет грустно, просто вспомни, что где-то есть я, готовый поддержать тебя и поднять настроение. 😊
+        </div>
     </div>
 
     <script>
-        const text = "Hello World!";
-        let index = 0;
-        const element = document.getElementById('text');
+        const messages = [
+            "Пусть твои мечты сбываются, а желания исполняются! ✨",
+            "Пусть твоя жизнь будет наполнена счастьем и любовью! 💖",
+            "Пусть твоя жизнь будет наполнена яркими красками! ✨",
+            "С тобой мир становится лучше! 🌟",
+            "Пусть каждый твой день будет таким же чудесным, как ты! 🌷",
+        ];
 
-        function typeWriter() {
-            if (index < text.length) {
-                element.innerHTML += text.charAt(index);
-                index++;
-                setTimeout(typeWriter, 300); // Задержка в миллисекундах между буквами
+        const confirmationMessages = [
+            "Ты точно уверена?",
+            "А вдруг ты передумаешь?",
+            "Может, не стоит?",
+            "Ты уверена, что хочешь это сделать?",
+            "Подумай еще раз!",
+            "Жми нет",
+            "Капец, ты прям 100% да?",
+            "Может, лучше не рисковать?",
+            "Ты уверена в своем выборе?",
+            "Это твое окончательное решение?",
+        ];
+
+        const catImages = [
+            "images/cat3.png",
+            "images/cat4.png",
+            "images/cat5.png",
+            "images/cat6.png",
+            "images/cat7.png",
+        ];
+
+        let index = 0;
+        let clickCount = 0;
+        let answersGiven = 0;
+
+        function changeText() {
+            document.getElementById('changingText').innerText = messages[index];
+            index = (index + 1) % messages.length;
+        }
+        setInterval(changeText, 5000);
+
+        function createHeart() {
+            const heart = document.createElement('div');
+            const heartTypes = ["❤️", "💖", "💘", "💝", "💓"];
+            const heartType = heartTypes[Math.floor(Math.random() * heartTypes.length)];
+            heart.classList.add('heart');
+            heart.innerHTML = heartType;
+            heart.style.left = Math.random() * window.innerWidth + 'px';
+            heart.style.animationDuration = (2 + Math.random() * 5) + 's';
+            document.querySelector('.hearts').appendChild(heart);
+            setTimeout(() => heart.remove(), 8000);
+        }
+
+        setInterval(createHeart, 100);
+        setInterval(createHeart, 150);
+
+        document.getElementById('catImage').addEventListener('click', function() {
+            const bigHeart = document.createElement('div');
+            bigHeart.classList.add('bigHeart');
+            bigHeart.innerHTML = "❤️";
+            document.body.appendChild(bigHeart);
+            document.getElementById('catImage').src = "images/cat2.png";
+            setTimeout(() => {
+                document.getElementById('catImage').src = "images/cat1.png";
+            }, 500);
+            setTimeout(() => bigHeart.remove(), 500);
+        });
+
+        function showWarning() {
+            clickCount++;
+            if (clickCount === 1) {
+                document.getElementById('changingText').style.display = 'none';
+                document.querySelector('h1').style.display = 'none';
+                document.getElementById('catImage').style.display = 'none';
+                document.querySelector('.clickText').style.display = 'none';
+                document.querySelector('.warningButton').style.display = 'none';
+                document.getElementById('confirmationBox').style.display = 'block';
+                updateConfirmationText();
             }
         }
 
-        window.onload = typeWriter;
+        function updateConfirmationText() {
+            const confirmationText = document.getElementById('confirmationText');
+            confirmationText.innerText = confirmationMessages[answersGiven % confirmationMessages.length];
+        }
+
+        function answerQuestion(answer) {
+            if (answer === 'yes') {
+                answersGiven++;
+                updateConfirmationText();
+                const currentCatImage = document.getElementById('currentCatImage');
+                currentCatImage.src = catImages[answersGiven % catImages.length];
+                if (answersGiven === 12) {
+                    document.getElementById('confirmationBox').style.display = 'none';
+                    document.getElementById('finalContent').style.display = 'flex';
+                }
+            } else if (answer === 'no') {
+                document.getElementById('errorMessage').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('errorMessage').style.display = 'none';
+                }, 2000);
+            }
+        }
     </script>
+
 </body>
 </html>
