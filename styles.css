@@ -426,3 +426,30 @@ body {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* Стили для уведомлений без левой полосы */
+.markdown-alert-warning {
+    background-color: rgba(187, 128, 9, 0.15);
+    border: 1px solid rgba(187, 128, 9, 0.4);
+}
+
+.markdown-alert-caution {
+    background-color: rgba(248, 81, 73, 0.15);
+    border: 1px solid rgba(248, 81, 73, 0.4);
+}
+
+.markdown-alert-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Убираем левую полосу только у blockquote, содержащих наши alert-блоки */
+.markdown-body blockquote:has(.markdown-alert) {
+    border-left: none !important;
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    background: transparent !important;
+}
