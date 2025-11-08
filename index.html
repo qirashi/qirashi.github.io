@@ -1,30 +1,395 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru" data-color-mode="dark" data-dark-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World!</title>
-    <link rel="stylesheet" href="style.css">
+    <title>TBGuides Viewer</title>
+    <link rel="icon" href="https://raw.githubusercontent.com/qirashi/TBGuides/main/favicon.ico" type="image/x-icon">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-dark.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1 id="text"></h1>
+        <div class="sidebar">
+            <div class="header">
+                <h2 id="repoTitle">Загрузка...</h2>
+                <p id="repoSubtitle" style="color: #8b949e; margin-top: 8px; font-size: 14px;">Навигация по документации</p>
+            </div>
+            <div id="fileTree">
+                <div class="loading">
+                    <span class="spinner"></span>Загрузка структуры...
+                </div>
+            </div>
+            
+            <!-- Блок контактов -->
+            <div class="contacts-section">
+                <div class="contacts-header">Контакты</div>
+                <div class="contacts-buttons">
+                    <a href="https://t.me/TBGuides" class="contact-button telegram" target="_blank">
+                        <span class="contact-icon">📢</span>
+                        <span class="contact-text">Telegram</span>
+                    </a>
+                    <a href="https://github.com/qirashi/TBGuides" class="contact-button github" target="_blank">
+                        <span class="contact-icon">🐙</span>
+                        <span class="contact-text">GitHub</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <article class="markdown-body">
+                <div id="content">
+                    <p>Загрузка README...</p>
+                </div>
+            </article>
+        </div>
     </div>
 
     <script>
-        const text = "Hello World!";
-        let index = 0;
-        const element = document.getElementById('text');
+        // Конфигурация репозитория
+        const REPO_CONFIG = {
+            owner: 'qirashi',
+            repo: 'TBGuides',
+            branch: 'main'
+        };
 
-        function typeWriter() {
-            if (index < text.length) {
-                element.innerHTML += text.charAt(index);
-                index++;
-                setTimeout(typeWriter, 300); // Задержка в миллисекундах между буквами
+        // Кэш для файлов и структура дерева
+        const fileCache = new Map();
+        const fileTree = {
+            'README.md': { 
+                type: 'file', 
+                path: 'README.md', 
+                name: 'README',
+                title: 'Загрузка...',
+                children: {} 
+            }
+        };
+
+        // Настройка Marked
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
+
+        // Единая функция для извлечения заголовка из Markdown контента
+        function extractTitleFromMarkdown(content) {
+            const titleMatch = content.match(/^#\s+(.+)$/m);
+            return titleMatch ? titleMatch[1].trim() : null;
+        }
+
+        // Единая функция для обновления всех заголовков
+        function updateTitles(title) {
+            if (!title) return;
+            
+            // Обновляем заголовок страницы
+            document.title = title;
+            
+            // Обновляем заголовок в сайдбаре
+            document.getElementById('repoTitle').textContent = title;
+            
+            // Обновляем заголовок README в дереве
+            if (fileTree['README.md']) {
+                fileTree['README.md'].title = title;
             }
         }
 
-        window.onload = typeWriter;
+        // Простая функция для добавления файла в дерево
+        function addFileToTree(filePath, parentPath = null, title = null) {
+            // Если файл уже есть в дереве, только обновляем связь с родителем
+            if (fileTree[filePath]) {
+                if (parentPath && fileTree[parentPath] && !fileTree[parentPath].children[filePath]) {
+                    fileTree[parentPath].children[filePath] = true;
+                }
+                return fileTree[filePath];
+            }
+            
+            // Создаем запись о файле
+            const fileName = filePath.split('/').pop().replace('.md', '');
+            const displayName = fileName.replace(/_/g, ' ').replace(/-/g, ' ');
+            const formattedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+            
+            fileTree[filePath] = { 
+                type: 'file', 
+                path: filePath,
+                name: formattedName,
+                title: title || formattedName,
+                children: {}
+            };
+            
+            // Если указан родитель, добавляем связь
+            if (parentPath && fileTree[parentPath]) {
+                fileTree[parentPath].children[filePath] = true;
+            }
+            
+            return fileTree[filePath];
+        }
+
+        // Функция для отрисовки дерева
+        function renderFileTree() {
+            const treeContainer = document.getElementById('fileTree');
+            treeContainer.innerHTML = '<ul class="file-tree" id="mainTree"></ul>';
+            const mainTree = document.getElementById('mainTree');
+            
+            // Рекурсивно отрисовываем дерево, начиная с корневых элементов
+            renderTreeLevel(fileTree, mainTree, true);
+        }
+
+        // Рекурсивная функция отрисовки уровня дереva
+        function renderTreeLevel(level, parentElement, isRoot = false) {
+            // Собираем все элементы для отображения
+            const itemsToRender = [];
+            
+            if (isRoot) {
+                // В корне показываем только README и его детей
+                if (level['README.md']) {
+                    itemsToRender.push('README.md');
+                }
+            } else {
+                // В остальных уровнях показываем все элементы
+                Object.keys(level).forEach(filePath => {
+                    if (fileTree[filePath]) {
+                        itemsToRender.push(filePath);
+                    }
+                });
+            }
+            
+            // Отрисовываем элементы
+            itemsToRender.forEach(filePath => {
+                const item = fileTree[filePath];
+                const li = document.createElement('li');
+                
+                const displayTitle = item.title || item.name;
+                
+                li.innerHTML = `
+                    <div class="tree-item file" data-path="${item.path}">
+                        <span>${displayTitle}</span>
+                    </div>
+                `;
+                
+                li.querySelector('.tree-item').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    loadMarkdownFile(item.path);
+                });
+                
+                // Если у файла есть дети, добавляем их
+                if (Object.keys(item.children).length > 0) {
+                    const childrenUl = document.createElement('ul');
+                    childrenUl.className = 'tree-children';
+                    li.appendChild(childrenUl);
+                    
+                    // Создаем подуровень с детьми этого файла
+                    const childLevel = {};
+                    Object.keys(item.children).forEach(childPath => {
+                        if (fileTree[childPath]) {
+                            childLevel[childPath] = true;
+                        }
+                    });
+                    renderTreeLevel(childLevel, childrenUl);
+                }
+                
+                parentElement.appendChild(li);
+            });
+        }
+
+        // Основная функция загрузки MD файла
+        async function loadMarkdownFile(filePath, parentPath = null) {
+            const contentDiv = document.getElementById('content');
+            
+            contentDiv.innerHTML = '<div class="loading"><span class="spinner"></span>Загрузка...</div>';
+            updateActiveFile(filePath);
+            
+            try {
+                const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+                
+                // Если файл уже в кэше, просто отображаем его
+                if (fileCache.has(cleanPath)) {
+                    const cachedFile = fileCache.get(cleanPath);
+                    displayMarkdown(cachedFile.content, cleanPath);
+                    
+                    // Сохраняем текущий hash если он есть
+                    const currentHash = window.location.hash;
+                    if (currentHash) {
+                        window.location.hash = currentHash;
+                    }
+                    return;
+                }
+
+                // Загружаем файл
+                const rawUrl = `https://raw.githubusercontent.com/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/${REPO_CONFIG.branch}/${cleanPath}`;
+                const response = await fetch(rawUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Файл не найден: ${response.status}`);
+                }
+                
+                const markdownText = await response.text();
+                
+                // Извлекаем заголовок из содержимого
+                const title = extractTitleFromMarkdown(markdownText);
+                
+                // Сохраняем в кэш
+                fileCache.set(cleanPath, {
+                    content: markdownText,
+                    parent: parentPath,
+                    title: title
+                });
+                
+                // Добавляем/обновляем файл в дереве
+                addFileToTree(cleanPath, parentPath, title);
+                
+                // Обновляем заголовки для README
+                if (cleanPath === 'README.md' && title) {
+                    updateTitles(title);
+                }
+                
+                // Перерисовываем дерево
+                renderFileTree();
+                updateActiveFile(cleanPath);
+                
+                displayMarkdown(markdownText, cleanPath);
+                
+            } catch (error) {
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <strong>Ошибка загрузки файла:</strong><br>
+                        ${error.message}<br>
+                        Путь: ${filePath}
+                    </div>
+                `;
+            }
+        }
+
+        // Функция разрешения относительных путей
+        function resolveRelativePath(relativePath, baseFilePath) {
+            const baseDir = baseFilePath.split('/').slice(0, -1).join('/');
+            
+            if (relativePath.startsWith('./')) {
+                return baseDir + '/' + relativePath.substring(2);
+            } else if (relativePath.startsWith('../')) {
+                let currentDir = baseDir;
+                let path = relativePath;
+                
+                while (path.startsWith('../')) {
+                    currentDir = currentDir.split('/').slice(0, -1).join('/');
+                    path = path.substring(3);
+                }
+                return currentDir + '/' + path;
+            } else if (relativePath.startsWith('/')) {
+                return relativePath.substring(1);
+            } else {
+                return baseDir ? baseDir + '/' + relativePath : relativePath;
+            }
+        }
+
+        // Функция для обработки заголовков и добавления ID
+        function processHeadings(container) {
+            const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            
+            headings.forEach(heading => {
+                if (!heading.id) {
+                    // Создаем ID из текста заголовка (аналогично тому, как это делает GitHub)
+                    const id = heading.textContent
+                        .toLowerCase()
+                        .replace(/[^\w\u0400-\u04FF]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                    heading.id = id;
+                }
+            });
+        }
+
+        // Функция отображения Markdown
+        function displayMarkdown(markdownText, currentFilePath) {
+            const contentDiv = document.getElementById('content');
+            
+            let processedMarkdown = preprocessSpecialBlocks(markdownText);
+            const htmlContent = marked.parse(processedMarkdown);
+            contentDiv.innerHTML = htmlContent;
+            
+            // Обрабатываем заголовки для якорных ссылок
+            processHeadings(contentDiv);
+            
+            processLinksInContent(contentDiv, currentFilePath);
+            
+            // Если в URL есть якорь, прокручиваем к нему
+            setTimeout(() => {
+                const hash = window.location.hash;
+                if (hash) {
+                    const target = document.querySelector(hash);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+            }, 100);
+        }
+
+        // Обработка специальных блоков
+        function preprocessSpecialBlocks(markdownText) {
+            return markdownText
+                .replace(/\[\!WARNING\]\s*\n+/g, '<div class="markdown-alert markdown-alert-warning"><div class="markdown-alert-title">⚠️ ВНИМАНИЕ</div>\n')
+                .replace(/\[\!CAUTION\]\s*\n+/g, '<div class="markdown-alert markdown-alert-caution"><div class="markdown-alert-title">🚨 ПРЕДУПРЕЖДЕНИЕ</div>\n')
+                .replace(/\n{2,}<\/div>/g, '\n</div>');
+        }
+
+        // Обработка ссылок в контенте
+        function processLinksInContent(container, currentFilePath) {
+            const links = container.getElementsByTagName('a');
+            
+            for (let link of links) {
+                const href = link.getAttribute('href');
+                
+                if (href && !href.startsWith('http') && !href.startsWith('javascript:')) {
+                    if (href.startsWith('#')) {
+                        // Якорная ссылка - оставляем стандартное поведение
+                        link.classList.add('md-link');
+                        // Не переопределяем поведение, чтобы браузер сам обрабатывал скролл
+                    } else {
+                        // Обычная ссылка на другой MD файл
+                        link.classList.add('md-link');
+                        link.onclick = (e) => {
+                            e.preventDefault();
+                            const resolvedPath = resolveRelativePath(href, currentFilePath);
+                            loadMarkdownFile(resolvedPath, currentFilePath);
+                        };
+                        link.href = 'javascript:void(0);';
+                    }
+                }
+            }
+        }
+
+        // Обновление активного файла в дереве
+        function updateActiveFile(filePath) {
+            document.querySelectorAll('.tree-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            const activeItem = document.querySelector(`.tree-item[data-path="${filePath}"]`);
+            if (activeItem) {
+                activeItem.classList.add('active');
+            }
+        }
+
+        // Обработчик изменения hash в URL
+        window.addEventListener('hashchange', function() {
+            const hash = window.location.hash;
+            if (hash) {
+                const target = document.querySelector(hash);
+                if (target) {
+                    setTimeout(() => {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                }
+            }
+        });
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            // Загружаем README
+            loadMarkdownFile('README.md');
+        });
+
+        window.loadMarkdownFile = loadMarkdownFile;
     </script>
 </body>
 </html>
