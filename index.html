@@ -10,11 +10,31 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Кнопка открытия сайдбара (показывается когда сайдбар скрыт) -->
+    <button class="sidebar-open-btn" id="sidebarOpenBtn">
+        <div class="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </button>
+
+    <!-- Оверлей для мобильных -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <div class="container">
-        <div class="sidebar">
-            <div class="header">
-                <h2 id="repoTitle">Загрузка...</h2>
-                <p id="repoSubtitle" style="color: #8b949e; margin-top: 8px; font-size: 14px;">Навигация по документации</p>
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="header-content">
+                    <h2 id="repoTitle">Загрузка...</h2>
+                    <p id="repoSubtitle">Навигация по документации</p>
+                </div>
+                <!-- Кнопка закрытия сайдбара (показывается когда сайдбар открыт) -->
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" title="Скрыть панель">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/>
+                    </svg>
+                </button>
             </div>
             <div id="fileTree">
                 <div class="loading">
@@ -38,8 +58,8 @@
             </div>
         </div>
         
-        <div class="content">
-            <article class="markdown-body">
+        <div class="content" id="contentArea">
+            <article class="markdown-body" id="markdownBody">
                 <div id="content">
                     <p>Загрузка README...</p>
                 </div>
@@ -72,6 +92,51 @@
             breaks: true,
             gfm: true
         });
+
+        // Управление сайдбаром
+        let isSidebarHidden = false;
+
+        function toggleSidebar() {
+            isSidebarHidden = !isSidebarHidden;
+            updateSidebarState();
+        }
+
+        function updateSidebarState() {
+            const sidebar = document.getElementById('sidebar');
+            const openBtn = document.getElementById('sidebarOpenBtn');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (isSidebarHidden) {
+                // Скрываем сайдбар
+                sidebar.classList.add('hidden');
+                openBtn.style.display = 'flex';
+                overlay.classList.remove('visible');
+            } else {
+                // Показываем сайдбар
+                sidebar.classList.remove('hidden');
+                openBtn.style.display = 'none';
+                if (window.innerWidth <= 768) {
+                    overlay.classList.add('visible');
+                }
+            }
+            
+            // Сохраняем состояние в localStorage
+            localStorage.setItem('sidebarHidden', isSidebarHidden);
+        }
+
+        function initSidebarState() {
+            const savedState = localStorage.getItem('sidebarHidden');
+            const openBtn = document.getElementById('sidebarOpenBtn');
+            
+            if (savedState === 'true') {
+                isSidebarHidden = true;
+                openBtn.style.display = 'flex';
+            } else {
+                isSidebarHidden = false;
+                openBtn.style.display = 'none';
+            }
+            updateSidebarState();
+        }
 
         // Единая функция для извлечения заголовка из Markdown контента
         function extractTitleFromMarkdown(content) {
@@ -136,7 +201,7 @@
             renderTreeLevel(fileTree, mainTree, true);
         }
 
-        // Рекурсивная функция отрисовки уровня дереva
+        // Рекурсивная функция отрисовки уровня дерева
         function renderTreeLevel(level, parentElement, isRoot = false) {
             // Собираем все элементы для отображения
             const itemsToRender = [];
@@ -385,8 +450,35 @@
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
+            // Инициализируем состояние сайдбара
+            initSidebarState();
+            
+            // Назначаем обработчики для переключения сайдбара
+            document.getElementById('sidebarOpenBtn').addEventListener('click', toggleSidebar);
+            document.getElementById('sidebarCloseBtn').addEventListener('click', toggleSidebar);
+            document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
+            
             // Загружаем README
             loadMarkdownFile('README.md');
+        });
+
+        // Обработчик изменения размера окна
+        window.addEventListener('resize', function() {
+            // При изменении размера окна обновляем состояние кнопки
+            const openBtn = document.getElementById('sidebarOpenBtn');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (window.innerWidth > 768) {
+                // На ПК убираем оверлей
+                overlay.classList.remove('visible');
+            }
+            
+            // Обновляем видимость кнопки в зависимости от состояния сайдбара
+            if (isSidebarHidden) {
+                openBtn.style.display = 'flex';
+            } else {
+                openBtn.style.display = 'none';
+            }
         });
 
         window.loadMarkdownFile = loadMarkdownFile;

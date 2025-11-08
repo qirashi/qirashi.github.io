@@ -11,6 +11,47 @@ body {
     min-height: 100vh;
 }
 
+/* Кнопка открытия сайдбара */
+.sidebar-open-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-open-btn:hover {
+    background: #1c2128;
+    border-color: #58a6ff;
+}
+
+.hamburger {
+    display: flex;
+    flex-direction: column;
+    width: 20px;
+    height: 16px;
+    justify-content: space-between;
+}
+
+.hamburger span {
+    display: block;
+    height: 2px;
+    width: 100%;
+    background-color: #c9d1d9;
+    border-radius: 1px;
+    transition: all 0.3s ease;
+}
+
 .container {
     display: flex;
     min-height: 100vh;
@@ -27,11 +68,56 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    transition: transform 0.3s ease;
+}
+
+.sidebar.hidden {
+    transform: translateX(-100%);
+}
+
+/* Заголовок сайдбара */
+.sidebar-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    border-bottom: 1px solid #30363d;
+    padding-bottom: 16px;
+    margin-bottom: 10px;
+    gap: 15px;
+}
+
+.header-content {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Кнопка закрытия на панели */
+.sidebar-close-btn {
+    flex-shrink: 0;
+    background: rgba(101, 109, 118, 0.1);
+    border: 1px solid rgba(101, 109, 118, 0.3);
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+    color: #8b949e;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+
+.sidebar-close-btn:hover {
+    background: rgba(101, 109, 118, 0.2);
+    border-color: rgba(101, 109, 118, 0.5);
+    color: #c9d1d9;
 }
 
 .content {
     flex: 1;
     overflow-y: auto;
+    transition: all 0.3s ease;
 }
 
 .markdown-body {
@@ -39,9 +125,29 @@ body {
     color: #c9d1d9;
     box-sizing: border-box;
     min-width: 200px;
-    max-width: 980px;
     margin: 0 auto;
     padding: 45px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+/* Масштабирование контента на ПК */
+@media (min-width: 1000px) {
+    .markdown-body {
+        max-width: 1200px;
+        padding: 45px 100px;
+        margin-left: auto;
+        margin-right: auto;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .sidebar:not(.hidden) + .content .markdown-body {
+        transform: translateX(0px); /* Сдвиг вправо на половину ширины панели */
+    }
+    
+    .sidebar.hidden + .content .markdown-body {
+        transform: translateX(-100px); /* Возврат в центр */
+    }
 }
 
 /* Стили для древовидного меню */
@@ -105,10 +211,16 @@ body {
     margin: 16px 0;
 }
 
-.header {
-    border-bottom: 1px solid #30363d;
-    padding-bottom: 16px;
-    margin-bottom: 10px;
+#repoTitle {
+    font-size: 1.5em;
+    margin-bottom: 5px;
+    word-wrap: break-word;
+}
+
+#repoSubtitle {
+    color: #8b949e;
+    font-size: 14px;
+    line-height: 1.4;
 }
 
 /* Стили для блока контактов */
@@ -183,6 +295,28 @@ body {
     flex: 1;
 }
 
+/* Оверлей для мобильных */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.visible {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 /* Стили для предупреждений */
 .markdown-body .markdown-alert {
     padding: 16px;
@@ -221,23 +355,59 @@ body {
 
 /* Мобильная адаптация */
 @media (max-width: 768px) {
-    .container {
-        flex-direction: column;
+    .sidebar-open-btn {
+        display: flex;
     }
-    
+
     .sidebar {
-        width: 100%;
-        height: 400px;
-        position: relative;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1000;
+        transform: translateX(-100%);
+        width: 300px;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
+
+    .sidebar:not(.hidden) {
+        transform: translateX(0);
+    }
+
     .markdown-body {
-        padding: 20px;
+        padding: 60px 20px 20px 20px;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .sidebar-close-btn {
+        display: flex;
+    }
+}
+
+@media (min-width: 1000px) {
+    .sidebar-open-btn {
+        display: none;
+        transition: all 0.3s ease;
+    }
+
+    .sidebar-close-btn {
+        display: flex;
     }
     
-    .contacts-section {
-        margin-top: 20px;
-        padding-top: 15px;
+    /* Плавное появление кнопки открытия */
+    .sidebar.hidden + .content .sidebar-open-btn {
+        display: flex;
+        animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
     }
 }
 
