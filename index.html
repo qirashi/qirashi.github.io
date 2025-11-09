@@ -408,18 +408,14 @@
                 );
 
                 markdownText = markdownText.replace(re, (match, prefix, content) => {
-                    // Убираем символы '>' из начала строк
                     content = content.replace(/^> ?/gm, '').trim();
 
-                    // Парсим Markdown внутри блока
                     let htmlContent = marked.parse(content);
 
-                    // Убираем лишние <p> в начале и конце, если marked добавил их вокруг всего блока
                     if (htmlContent.startsWith('<p>') && htmlContent.endsWith('</p>\n')) {
                         htmlContent = htmlContent.slice(3, -5);
                     }
 
-                    // Формируем HTML блока с сохранением структуры как в GitHub
                     return `${prefix}<div class="markdown-alert ${cls}">
             <div class="markdown-alert-title">
                 <svg viewBox="0 0 16 16" width="16" height="16">
