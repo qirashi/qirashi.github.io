@@ -7,9 +7,7 @@ const REPO_CONFIG = {
 
 // Кэш и дерево файлов
 const fileCache = new Map();
-const fileTree = {
-	'README.md': { type: 'file', path: 'README.md', name: 'README', title: 'Загрузка...', children: {} }
-};
+const fileTree = {};
 
 // Настройка Marked
 marked.setOptions({ breaks: true, gfm: true });
@@ -45,12 +43,14 @@ function loadFromURL() {
 	const fileParam = urlParams.get('file');
 	
 	if (fileParam) {
+		loadMarkdown('README.md'); // всегда загружаем основной для дерева
 		return loadMarkdown(decodeURIComponent(fileParam));
 	}
 	
 	// Проверяем хеш (для обратной совместимости)
 	const hash = window.location.hash.slice(1);
 	if (hash && hash.endsWith('.md')) {
+		loadMarkdown('README.md');
 		return loadMarkdown(hash);
 	}
 	
@@ -66,25 +66,35 @@ function updatePageTitle(title) {
 	if (!title) return;
 	document.title = title;
 	document.getElementById('repoTitle').textContent = title;
-	fileTree['README.md'].title = title;
 }
 
 // Добавление файла в дерево
-function addFile(filePath, parentPath = null, title = null) {
+function addFile(filePath, title = null) {
 	if (!fileTree[filePath]) {
 		const rawName = filePath.split('/').pop().replace('.md', '');
-		const displayName = rawName.replace(/[_-]/g, ' ');
-		const formatted = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-		fileTree[filePath] = { type: 'file', path: filePath, name: formatted, title: title || formatted, children: {} };
+		const displayName = title || rawName.replace(/[_-]/g, ' ');
+		fileTree[filePath] = { type: 'file', path: filePath, name: displayName, children: {} };
 	}
-	if (parentPath && fileTree[parentPath]) fileTree[parentPath].children[filePath] = true;
 	return fileTree[filePath];
+}
+
+// Формирование дерева из ссылок README
+function buildTreeFromReadme(text) {
+	const root = addFile('README.md', '📘 TBGuides');
+	const linkRegex = /\[([^\]]+)\]\(([^)]+\.md)\)/g;
+	let match;
+	while ((match = linkRegex.exec(text)) !== null) {
+		const [ , linkText, linkPath ] = match;
+		const fullPath = resolvePath(linkPath, 'README.md');
+		const fileNode = addFile(fullPath, `📘 ${linkText}`);
+		root.children[fullPath] = true;
+	}
 }
 
 // Отрисовка дерева
 function renderTree() {
-	const root = document.getElementById('fileTree');
-	root.innerHTML = '<ul class="file-tree" id="mainTree"></ul>';
+	const rootContainer = document.getElementById('fileTree');
+	rootContainer.innerHTML = '<ul class="file-tree" id="mainTree"></ul>';
 	renderTreeLevel({ 'README.md': true }, document.getElementById('mainTree'));
 }
 
@@ -93,7 +103,7 @@ function renderTreeLevel(level, parent) {
 		const file = fileTree[filePath];
 		if (!file) return;
 		const li = document.createElement('li');
-		li.innerHTML = `<div class="tree-item file" data-path="${file.path}"><span>${file.title || file.name}</span></div>`;
+		li.innerHTML = `<div class="tree-item file" data-path="${file.path}"><span>${file.name}</span></div>`;
 		li.querySelector('.tree-item').onclick = () => loadMarkdown(file.path);
 		if (Object.keys(file.children).length) {
 			const ul = document.createElement('ul');
@@ -112,8 +122,26 @@ async function loadMarkdown(filePath, parentPath = null) {
 	setActiveFile(filePath);
 	const clean = filePath.replace(/^\//, '');
 
+	// Сначала загрузим основной README для дерева
+	if (!fileCache.has('README.md')) {
+		try {
+			const readmeURL = `https://raw.githubusercontent.com/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/${REPO_CONFIG.branch}/README.md`;
+			const resp = await fetch(readmeURL);
+			if (resp.ok) {
+				const text = await resp.text();
+				const title = extractTitle(text);
+				fileCache.set('README.md', { content: text, title });
+				buildTreeFromReadme(text);
+				updatePageTitle(title);
+			}
+		} catch (e) {
+			console.error('Ошибка при загрузке README:', e);
+		}
+	}
+
 	if (fileCache.has(clean)) {
 		displayMarkdown(fileCache.get(clean).content, clean);
+		renderTree();
 		updateURL(clean);
 		return;
 	}
@@ -123,17 +151,13 @@ async function loadMarkdown(filePath, parentPath = null) {
 		const response = await fetch(url);
 		if (!response.ok) throw new Error(`Файл не найден (${response.status})`);
 		const text = await response.text();
-
 		const title = extractTitle(text);
-		fileCache.set(clean, { content: text, parent: parentPath, title });
-		addFile(clean, parentPath, title);
-		if (clean === 'README.md') updatePageTitle(title);
-
+		fileCache.set(clean, { content: text, title });
+		if (clean !== 'README.md') addFile(clean, title);
 		renderTree();
 		setActiveFile(clean);
 		displayMarkdown(text, clean);
 		updateURL(clean);
-
 	} catch (err) {
 		content.innerHTML = `<div class="error"><strong>Ошибка:</strong><br>${err.message}</div>`;
 	}
@@ -167,8 +191,7 @@ function fixImages(container, file) {
 function fixLinks(container, file) {
 	container.querySelectorAll('a').forEach(link => {
 		const href = link.getAttribute('href');
-		if (!href || href.startsWith('http') || href.startsWith('javascript:')) return;
-		if (href.startsWith('#')) return;
+		if (!href || href.startsWith('http') || href.startsWith('javascript:') || href.startsWith('#')) return;
 		link.classList.add('md-link');
 		link.href = 'javascript:void(0);';
 		link.onclick = e => { e.preventDefault(); loadMarkdown(resolvePath(href, file), file); };
