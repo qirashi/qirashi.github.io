@@ -294,6 +294,22 @@ function processHeadings(container) {
 	});
 }
 
+// Функция для обработки изображений в контенте
+function processImagesInContent(container, currentFilePath) {
+	const images = container.getElementsByTagName('img');
+	
+	for (let img of images) {
+		const src = img.getAttribute('src');
+		
+		if (src && !src.startsWith('http') && !src.startsWith('data:')) {
+
+			const resolvedPath = resolveRelativePath(src, currentFilePath);
+			const rawUrl = `https://raw.githubusercontent.com/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/${REPO_CONFIG.branch}/${resolvedPath}`;
+			img.src = rawUrl;
+		}
+	}
+}
+
 // Функция отображения Markdown
 function displayMarkdown(markdownText, currentFilePath) {
 	const contentDiv = document.getElementById('content');
@@ -306,6 +322,8 @@ function displayMarkdown(markdownText, currentFilePath) {
 	processHeadings(contentDiv);
 	
 	processLinksInContent(contentDiv, currentFilePath);
+
+	processImagesInContent(contentDiv, currentFilePath);
 	
 	// Если в URL есть якорь, прокручиваем к нему
 	setTimeout(() => {
