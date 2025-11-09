@@ -32,6 +32,32 @@ function toggleSidebar() {
 	updateSidebar();
 }
 
+// Обновление URL и истории браузера
+function updateURL(filePath) {
+	const basePath = window.location.origin + window.location.pathname;
+	const newURL = filePath === 'README.md' ? basePath : `${basePath}?file=${encodeURIComponent(filePath)}`;
+	window.history.pushState({ filePath }, '', newURL);
+}
+
+// Загрузка файла из параметров URL
+function loadFromURL() {
+	const urlParams = new URLSearchParams(window.location.search);
+	const fileParam = urlParams.get('file');
+	
+	if (fileParam) {
+		return loadMarkdown(decodeURIComponent(fileParam));
+	}
+	
+	// Проверяем хеш (для обратной совместимости)
+	const hash = window.location.hash.slice(1);
+	if (hash && hash.endsWith('.md')) {
+		return loadMarkdown(hash);
+	}
+	
+	// По умолчанию загружаем README
+	return loadMarkdown('README.md');
+}
+
 // Извлечение заголовка
 const extractTitle = md => (md.match(/^#\s+(.+)$/m)?.[1]?.trim() || null);
 
@@ -86,7 +112,11 @@ async function loadMarkdown(filePath, parentPath = null) {
 	setActiveFile(filePath);
 	const clean = filePath.replace(/^\//, '');
 
-	if (fileCache.has(clean)) return displayMarkdown(fileCache.get(clean).content, clean);
+	if (fileCache.has(clean)) {
+		displayMarkdown(fileCache.get(clean).content, clean);
+		updateURL(clean);
+		return;
+	}
 
 	try {
 		const url = `https://raw.githubusercontent.com/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/${REPO_CONFIG.branch}/${clean}`;
@@ -102,6 +132,7 @@ async function loadMarkdown(filePath, parentPath = null) {
 		renderTree();
 		setActiveFile(clean);
 		displayMarkdown(text, clean);
+		updateURL(clean);
 
 	} catch (err) {
 		content.innerHTML = `<div class="error"><strong>Ошибка:</strong><br>${err.message}</div>`;
@@ -202,7 +233,18 @@ document.addEventListener('DOMContentLoaded', () => {
 	document.getElementById('sidebarOpenBtn').onclick = toggleSidebar;
 	document.getElementById('sidebarCloseBtn').onclick = toggleSidebar;
 	document.getElementById('sidebarOverlay').onclick = toggleSidebar;
-	loadMarkdown('README.md');
+	
+	// Обработка кнопок назад/вперед в браузере
+	window.addEventListener('popstate', (event) => {
+		if (event.state && event.state.filePath) {
+			loadMarkdown(event.state.filePath);
+		} else {
+			loadFromURL();
+		}
+	});
+	
+	// Загрузка файла из URL или README по умолчанию
+	loadFromURL();
 });
 
 window.addEventListener('resize', updateSidebar);
