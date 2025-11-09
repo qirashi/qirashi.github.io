@@ -5,339 +5,157 @@ const REPO_CONFIG = {
 	branch: 'main'
 };
 
-// Кэш для файлов и структура дерева
+// Кэш и дерево файлов
 const fileCache = new Map();
 const fileTree = {
-	'README.md': { 
-		type: 'file', 
-		path: 'README.md', 
-		name: 'README',
-		title: 'Загрузка...',
-		children: {} 
-	}
+	'README.md': { type: 'file', path: 'README.md', name: 'README', title: 'Загрузка...', children: {} }
 };
 
 // Настройка Marked
-marked.setOptions({
-	breaks: true,
-	gfm: true
-});
+marked.setOptions({ breaks: true, gfm: true });
 
-// Управление сайдбаром
-let isSidebarHidden = false;
+// Сайдбар
+let isSidebarHidden = JSON.parse(localStorage.getItem('sidebarHidden') || 'false');
 
-function toggleSidebar() {
-	isSidebarHidden = !isSidebarHidden;
-	updateSidebarState();
-}
-
-function updateSidebarState() {
+function updateSidebar() {
 	const sidebar = document.getElementById('sidebar');
 	const openBtn = document.getElementById('sidebarOpenBtn');
 	const overlay = document.getElementById('sidebarOverlay');
-	
-	if (isSidebarHidden) {
-		// Скрываем сайдбар
-		sidebar.classList.add('hidden');
-		openBtn.style.display = 'flex';
-		overlay.classList.remove('visible');
-	} else {
-		// Показываем сайдбар
-		sidebar.classList.remove('hidden');
-		openBtn.style.display = 'none';
-		if (window.innerWidth <= 768) {
-			overlay.classList.add('visible');
-		}
-	}
-	
-	// Сохраняем состояние в localStorage
+	sidebar.classList.toggle('hidden', isSidebarHidden);
+	openBtn.style.display = isSidebarHidden ? 'flex' : 'none';
+	overlay.classList.toggle('visible', !isSidebarHidden && window.innerWidth <= 768);
 	localStorage.setItem('sidebarHidden', isSidebarHidden);
 }
 
-function initSidebarState() {
-	const savedState = localStorage.getItem('sidebarHidden');
-	const openBtn = document.getElementById('sidebarOpenBtn');
-	
-	if (savedState === 'true') {
-		isSidebarHidden = true;
-		openBtn.style.display = 'flex';
-	} else {
-		isSidebarHidden = false;
-		openBtn.style.display = 'none';
-	}
-	updateSidebarState();
+function toggleSidebar() {
+	isSidebarHidden = !isSidebarHidden;
+	updateSidebar();
 }
 
-// Единая функция для извлечения заголовка из Markdown контента
-function extractTitleFromMarkdown(content) {
-	const titleMatch = content.match(/^#\s+(.+)$/m);
-	return titleMatch ? titleMatch[1].trim() : null;
-}
+// Извлечение заголовка
+const extractTitle = md => (md.match(/^#\s+(.+)$/m)?.[1]?.trim() || null);
 
-// Единая функция для обновления всех заголовков
-function updateTitles(title) {
+// Обновление заголовков
+function updatePageTitle(title) {
 	if (!title) return;
-	
-	// Обновляем заголовок страницы
 	document.title = title;
-	
-	// Обновляем заголовок в сайдбаре
 	document.getElementById('repoTitle').textContent = title;
-	
-	// Обновляем заголовок README в дереве
-	if (fileTree['README.md']) {
-		fileTree['README.md'].title = title;
-	}
+	fileTree['README.md'].title = title;
 }
 
-// Простая функция для добавления файла в дерево
-function addFileToTree(filePath, parentPath = null, title = null) {
-	// Если файл уже есть в дереве, только обновляем связь с родителем
-	if (fileTree[filePath]) {
-		if (parentPath && fileTree[parentPath] && !fileTree[parentPath].children[filePath]) {
-			fileTree[parentPath].children[filePath] = true;
-		}
-		return fileTree[filePath];
+// Добавление файла в дерево
+function addFile(filePath, parentPath = null, title = null) {
+	if (!fileTree[filePath]) {
+		const rawName = filePath.split('/').pop().replace('.md', '');
+		const displayName = rawName.replace(/[_-]/g, ' ');
+		const formatted = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+		fileTree[filePath] = { type: 'file', path: filePath, name: formatted, title: title || formatted, children: {} };
 	}
-	
-	// Создаем запись о файле
-	const fileName = filePath.split('/').pop().replace('.md', '');
-	const displayName = fileName.replace(/_/g, ' ').replace(/-/g, ' ');
-	const formattedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-	
-	fileTree[filePath] = { 
-		type: 'file', 
-		path: filePath,
-		name: formattedName,
-		title: title || formattedName,
-		children: {}
-	};
-	
-	// Если указан родитель, добавляем связь
-	if (parentPath && fileTree[parentPath]) {
-		fileTree[parentPath].children[filePath] = true;
-	}
-	
+	if (parentPath && fileTree[parentPath]) fileTree[parentPath].children[filePath] = true;
 	return fileTree[filePath];
 }
 
-// Функция для отрисовки дерева
-function renderFileTree() {
-	const treeContainer = document.getElementById('fileTree');
-	treeContainer.innerHTML = '<ul class="file-tree" id="mainTree"></ul>';
-	const mainTree = document.getElementById('mainTree');
-	
-	// Рекурсивно отрисовываем дерево, начиная с корневых элементов
-	renderTreeLevel(fileTree, mainTree, true);
+// Отрисовка дерева
+function renderTree() {
+	const root = document.getElementById('fileTree');
+	root.innerHTML = '<ul class="file-tree" id="mainTree"></ul>';
+	renderTreeLevel({ 'README.md': true }, document.getElementById('mainTree'));
 }
 
-// Рекурсивная функция отрисовки уровня дерева
-function renderTreeLevel(level, parentElement, isRoot = false) {
-	// Собираем все элементы для отображения
-	const itemsToRender = [];
-	
-	if (isRoot) {
-		// В корне показываем только README и его детей
-		if (level['README.md']) {
-			itemsToRender.push('README.md');
-		}
-	} else {
-		// В остальных уровнях показываем все элементы
-		Object.keys(level).forEach(filePath => {
-			if (fileTree[filePath]) {
-				itemsToRender.push(filePath);
-			}
-		});
-	}
-	
-	// Отрисовываем элементы
-	itemsToRender.forEach(filePath => {
-		const item = fileTree[filePath];
+function renderTreeLevel(level, parent) {
+	Object.keys(level).forEach(filePath => {
+		const file = fileTree[filePath];
+		if (!file) return;
 		const li = document.createElement('li');
-		
-		const displayTitle = item.title || item.name;
-		
-		li.innerHTML = `
-			<div class="tree-item file" data-path="${item.path}">
-				<span>${displayTitle}</span>
-			</div>
-		`;
-		
-		li.querySelector('.tree-item').addEventListener('click', (e) => {
-			e.stopPropagation();
-			loadMarkdownFile(item.path);
-		});
-		
-		// Если у файла есть дети, добавляем их
-		if (Object.keys(item.children).length > 0) {
-			const childrenUl = document.createElement('ul');
-			childrenUl.className = 'tree-children';
-			li.appendChild(childrenUl);
-			
-			// Создаем подуровень с детьми этого файла
-			const childLevel = {};
-			Object.keys(item.children).forEach(childPath => {
-				if (fileTree[childPath]) {
-					childLevel[childPath] = true;
-				}
-			});
-			renderTreeLevel(childLevel, childrenUl);
+		li.innerHTML = `<div class="tree-item file" data-path="${file.path}"><span>${file.title || file.name}</span></div>`;
+		li.querySelector('.tree-item').onclick = () => loadMarkdown(file.path);
+		if (Object.keys(file.children).length) {
+			const ul = document.createElement('ul');
+			ul.className = 'tree-children';
+			renderTreeLevel(file.children, ul);
+			li.appendChild(ul);
 		}
-		
-		parentElement.appendChild(li);
+		parent.appendChild(li);
 	});
 }
 
-// Основная функция загрузки MD файла
-async function loadMarkdownFile(filePath, parentPath = null) {
-	const contentDiv = document.getElementById('content');
-	
-	contentDiv.innerHTML = '<div class="loading"><span class="spinner"></span>Загрузка...</div>';
-	updateActiveFile(filePath);
-	
+// Отображение файла
+async function loadMarkdown(filePath, parentPath = null) {
+	const content = document.getElementById('content');
+	content.innerHTML = '<div class="loading"><span class="spinner"></span>Загрузка...</div>';
+	setActiveFile(filePath);
+	const clean = filePath.replace(/^\//, '');
+
+	if (fileCache.has(clean)) return displayMarkdown(fileCache.get(clean).content, clean);
+
 	try {
-		const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
-		
-		// Если файл уже в кэше, просто отображаем его
-		if (fileCache.has(cleanPath)) {
-			const cachedFile = fileCache.get(cleanPath);
-			displayMarkdown(cachedFile.content, cleanPath);
-			
-			// Сохраняем текущий hash если он есть
-			const currentHash = window.location.hash;
-			if (currentHash) {
-				window.location.hash = currentHash;
-			}
-			return;
-		}
+		const url = `https://raw.githubusercontent.com/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/${REPO_CONFIG.branch}/${clean}`;
+		const response = await fetch(url);
+		if (!response.ok) throw new Error(`Файл не найден (${response.status})`);
+		const text = await response.text();
 
-		// Загружаем файл
-		const rawUrl = `https://raw.githubusercontent.com/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/${REPO_CONFIG.branch}/${cleanPath}`;
-		const response = await fetch(rawUrl);
-		
-		if (!response.ok) {
-			throw new Error(`Файл не найден: ${response.status}`);
-		}
-		
-		const markdownText = await response.text();
-		
-		// Извлекаем заголовок из содержимого
-		const title = extractTitleFromMarkdown(markdownText);
-		
-		// Сохраняем в кэш
-		fileCache.set(cleanPath, {
-			content: markdownText,
-			parent: parentPath,
-			title: title
-		});
-		
-		// Добавляем/обновляем файл в дереве
-		addFileToTree(cleanPath, parentPath, title);
-		
-		// Обновляем заголовки для README
-		if (cleanPath === 'README.md' && title) {
-			updateTitles(title);
-		}
-		
-		// Перерисовываем дерево
-		renderFileTree();
-		updateActiveFile(cleanPath);
-		
-		displayMarkdown(markdownText, cleanPath);
-		
-	} catch (error) {
-		contentDiv.innerHTML = `
-			<div class="error">
-				<strong>Ошибка загрузки файла:</strong><br>
-				${error.message}<br>
-				Путь: ${filePath}
-			</div>
-		`;
+		const title = extractTitle(text);
+		fileCache.set(clean, { content: text, parent: parentPath, title });
+		addFile(clean, parentPath, title);
+		if (clean === 'README.md') updatePageTitle(title);
+
+		renderTree();
+		setActiveFile(clean);
+		displayMarkdown(text, clean);
+
+	} catch (err) {
+		content.innerHTML = `<div class="error"><strong>Ошибка:</strong><br>${err.message}</div>`;
 	}
 }
 
-// Функция разрешения относительных путей
-function resolveRelativePath(relativePath, baseFilePath) {
-	const baseDir = baseFilePath.split('/').slice(0, -1).join('/');
-	
-	if (relativePath.startsWith('./')) {
-		return baseDir + '/' + relativePath.substring(2);
-	} else if (relativePath.startsWith('../')) {
-		let currentDir = baseDir;
-		let path = relativePath;
-		
-		while (path.startsWith('../')) {
-			currentDir = currentDir.split('/').slice(0, -1).join('/');
-			path = path.substring(3);
-		}
-		return currentDir + '/' + path;
-	} else if (relativePath.startsWith('/')) {
-		return relativePath.substring(1);
-	} else {
-		return baseDir ? baseDir + '/' + relativePath : relativePath;
-	}
+// Разрешение относительных путей
+function resolvePath(rel, base) {
+	const baseDir = base.split('/').slice(0, -1).join('/');
+	return rel.startsWith('./') ? `${baseDir}/${rel.slice(2)}` :
+		   rel.startsWith('../') ? baseDir.split('/').slice(0, -1).join('/') + '/' + rel.replace(/^..\//, '') :
+		   rel.startsWith('/') ? rel.slice(1) : baseDir ? baseDir + '/' + rel : rel;
 }
 
-// Функция для обработки заголовков и добавления ID
-function processHeadings(container) {
-	const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
-	
-	headings.forEach(heading => {
-		if (!heading.id) {
-			// Создаем ID из текста заголовка (аналогично тому, как это делает GitHub)
-			const id = heading.textContent
-				.toLowerCase()
-				.replace(/[^\w\u0400-\u04FF]+/g, '-')
-				.replace(/^-+|-+$/g, '');
-			heading.id = id;
-		}
+// Заголовки → ID
+function fixHeadings(container) {
+	container.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h => {
+		if (!h.id) h.id = h.textContent.toLowerCase().replace(/[^\w\u0400-\u04FF]+/g, '-').replace(/^-+|-+$/g, '');
 	});
 }
 
-// Функция для обработки изображений в контенте
-function processImagesInContent(container, currentFilePath) {
-	const images = container.getElementsByTagName('img');
-	
-	for (let img of images) {
+// Изображения
+function fixImages(container, file) {
+	container.querySelectorAll('img').forEach(img => {
 		const src = img.getAttribute('src');
-		
-		if (src && !src.startsWith('http') && !src.startsWith('data:')) {
-
-			const resolvedPath = resolveRelativePath(src, currentFilePath);
-			const rawUrl = `https://raw.githubusercontent.com/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/${REPO_CONFIG.branch}/${resolvedPath}`;
-			img.src = rawUrl;
-		}
-	}
+		if (src && !/^(http|data)/.test(src))
+			img.src = `https://raw.githubusercontent.com/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/${REPO_CONFIG.branch}/${resolvePath(src, file)}`;
+	});
 }
 
-// Функция отображения Markdown
-function displayMarkdown(markdownText, currentFilePath) {
-	const contentDiv = document.getElementById('content');
-	
-	let processedMarkdown = preprocessSpecialBlocks(markdownText);
-	const htmlContent = marked.parse(processedMarkdown);
-	contentDiv.innerHTML = htmlContent;
-	
-	// Обрабатываем заголовки для якорных ссылок
-	processHeadings(contentDiv);
-	
-	processLinksInContent(contentDiv, currentFilePath);
-
-	processImagesInContent(contentDiv, currentFilePath);
-	
-	// Если в URL есть якорь, прокручиваем к нему
-	setTimeout(() => {
-		const hash = window.location.hash;
-		if (hash) {
-			const target = document.querySelector(hash);
-			if (target) {
-				target.scrollIntoView({ behavior: 'smooth' });
-			}
-		}
-	}, 100);
+// Ссылки
+function fixLinks(container, file) {
+	container.querySelectorAll('a').forEach(link => {
+		const href = link.getAttribute('href');
+		if (!href || href.startsWith('http') || href.startsWith('javascript:')) return;
+		if (href.startsWith('#')) return;
+		link.classList.add('md-link');
+		link.href = 'javascript:void(0);';
+		link.onclick = e => { e.preventDefault(); loadMarkdown(resolvePath(href, file), file); };
+	});
 }
 
-// Обработка специальных блоков
+// Вывод Markdown
+function displayMarkdown(text, file) {
+	const html = marked.parse(preprocessSpecialBlocks(text));
+	const container = document.getElementById('content');
+	container.innerHTML = html;
+	fixHeadings(container);
+	fixLinks(container, file);
+	fixImages(container, file);
+	if (location.hash) setTimeout(() => document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth' }), 100);
+}
+
+// Обработка блоков ([!NOTE] и т.п.)
 function preprocessSpecialBlocks(markdownText) {
 	const blocks = {
 		NOTE:      { cls: 'markdown-alert-note',      title: 'Заметка',       icon: 'M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z' },
@@ -348,119 +166,44 @@ function preprocessSpecialBlocks(markdownText) {
 	};
 
 	for (const type in blocks) {
-		const { cls, title, icon } = blocks[type];
-
-		const re = new RegExp(
-			String.raw`(^|\n)>?\s*\[\!${type}\]\s*\n((?:>.*\n?)*)`,
-			'gi'
-		);
-
-		markdownText = markdownText.replace(re, (match, prefix, content) => {
-			content = content.replace(/^> ?/gm, '').trim();
-
-			let htmlContent = marked.parse(content);
-
-			if (htmlContent.startsWith('<p>') && htmlContent.endsWith('</p>\n')) {
-				htmlContent = htmlContent.slice(3, -5);
-			}
-
-			return `${prefix}<div class="markdown-alert ${cls}">
+		const block = blocks[type];
+		markdownText = markdownText.replace(
+			new RegExp(`(^|\\n)>?\\s*\\[!${type}\\]\\s*\\n((?:>.*\\n?)*)`, 'gi'),
+			(_, p, body) => {
+				body = body.replace(/^> ?/gm, '').trim();
+				const inner = marked.parse(body).replace(/^<p>|<\/p>\n?$/g, '');
+				return `${p}<div class="markdown-alert ${block.cls}">
 	<div class="markdown-alert-title">
-		<svg viewBox="0 0 16 16" width="16" height="16">
-			<path d="${icon}"></path>
-		</svg> ${title}
+		<svg viewBox="0 0 16 16" width="16" height="16"><path d="${block.icon}"/></svg> ${block.title}
 	</div>
-	${htmlContent}
+	${inner}
 </div>\n`;
-		});
+			}
+		);
 	}
 
 	return markdownText;
 }
 
-
-// Обработка ссылок в контенте
-function processLinksInContent(container, currentFilePath) {
-	const links = container.getElementsByTagName('a');
-	
-	for (let link of links) {
-		const href = link.getAttribute('href');
-		
-		if (href && !href.startsWith('http') && !href.startsWith('javascript:')) {
-			if (href.startsWith('#')) {
-				// Якорная ссылка - оставляем стандартное поведение
-				link.classList.add('md-link');
-				// Не переопределяем поведение, чтобы браузер сам обрабатывал скролл
-			} else {
-				// Обычная ссылка на другой MD файл
-				link.classList.add('md-link');
-				link.onclick = (e) => {
-					e.preventDefault();
-					const resolvedPath = resolveRelativePath(href, currentFilePath);
-					loadMarkdownFile(resolvedPath, currentFilePath);
-				};
-				link.href = 'javascript:void(0);';
-			}
-		}
-	}
+// Активный файл
+function setActiveFile(path) {
+	document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('active'));
+	document.querySelector(`.tree-item[data-path="${path}"]`)?.classList.add('active');
 }
 
-// Обновление активного файла в дереве
-function updateActiveFile(filePath) {
-	document.querySelectorAll('.tree-item').forEach(item => {
-		item.classList.remove('active');
-	});
-	
-	const activeItem = document.querySelector(`.tree-item[data-path="${filePath}"]`);
-	if (activeItem) {
-		activeItem.classList.add('active');
-	}
-}
-
-// Обработчик изменения hash в URL
-window.addEventListener('hashchange', function() {
-	const hash = window.location.hash;
-	if (hash) {
-		const target = document.querySelector(hash);
-		if (target) {
-			setTimeout(() => {
-				target.scrollIntoView({ behavior: 'smooth' });
-			}, 100);
-		}
-	}
+// Hash scroll
+window.addEventListener('hashchange', () => {
+	document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth' });
 });
 
-// Инициализация
-document.addEventListener('DOMContentLoaded', function() {
-	// Инициализируем состояние сайдбара
-	initSidebarState();
-	
-	// Назначаем обработчики для переключения сайдбара
-	document.getElementById('sidebarOpenBtn').addEventListener('click', toggleSidebar);
-	document.getElementById('sidebarCloseBtn').addEventListener('click', toggleSidebar);
-	document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
-	
-	// Загружаем README
-	loadMarkdownFile('README.md');
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+	updateSidebar();
+	document.getElementById('sidebarOpenBtn').onclick = toggleSidebar;
+	document.getElementById('sidebarCloseBtn').onclick = toggleSidebar;
+	document.getElementById('sidebarOverlay').onclick = toggleSidebar;
+	loadMarkdown('README.md');
 });
 
-// Обработчик изменения размера окна
-window.addEventListener('resize', function() {
-	// При изменении размера окна обновляем состояние кнопки
-	const openBtn = document.getElementById('sidebarOpenBtn');
-	const overlay = document.getElementById('sidebarOverlay');
-	
-	if (window.innerWidth > 768) {
-		// На ПК убираем оверлей
-		overlay.classList.remove('visible');
-	}
-	
-	// Обновляем видимость кнопки в зависимости от состояния сайдбара
-	if (isSidebarHidden) {
-		openBtn.style.display = 'flex';
-	} else {
-		openBtn.style.display = 'none';
-	}
-});
-
-window.loadMarkdownFile = loadMarkdownFile;
+window.addEventListener('resize', updateSidebar);
+window.loadMarkdownFile = loadMarkdown;
