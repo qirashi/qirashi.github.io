@@ -37,36 +37,8 @@ function updateURL(filePath) {
 	window.history.pushState({ filePath }, '', newURL);
 }
 
-// Загрузка файла из параметров URL
-function loadFromURL() {
-	const urlParams = new URLSearchParams(window.location.search);
-	const fileParam = urlParams.get('file');
-	
-	if (fileParam) {
-		loadMarkdown('README.md'); // всегда загружаем основной для дерева
-		return loadMarkdown(decodeURIComponent(fileParam));
-	}
-	
-	// Проверяем хеш (для обратной совместимости)
-	const hash = window.location.hash.slice(1);
-	if (hash && hash.endsWith('.md')) {
-		loadMarkdown('README.md');
-		return loadMarkdown(hash);
-	}
-	
-	// По умолчанию загружаем README
-	return loadMarkdown('README.md');
-}
-
 // Извлечение заголовка
 const extractTitle = md => (md.match(/^#\s+(.+)$/m)?.[1]?.trim() || null);
-
-// Обновление заголовков
-function updatePageTitle(title) {
-	if (!title) return;
-	document.title = title;
-	document.getElementById('repoTitle').textContent = title;
-}
 
 // Добавление файла в дерево
 function addFile(filePath, title = null) {
@@ -78,15 +50,16 @@ function addFile(filePath, title = null) {
 	return fileTree[filePath];
 }
 
-// Формирование дерева из ссылок README
+// Создание дерева из README
 function buildTreeFromReadme(text) {
-	const root = addFile('README.md', '📘 TBGuides');
+	const title = extractTitle(text) || 'TBGuides';
+	const root = addFile('README.md', title);
 	const linkRegex = /\[([^\]]+)\]\(([^)]+\.md)\)/g;
 	let match;
 	while ((match = linkRegex.exec(text)) !== null) {
-		const [ , linkText, linkPath ] = match;
+		const [, linkText, linkPath] = match;
 		const fullPath = resolvePath(linkPath, 'README.md');
-		const fileNode = addFile(fullPath, `📘 ${linkText}`);
+		const node = addFile(fullPath, `📘 ${linkText}`);
 		root.children[fullPath] = true;
 	}
 }
@@ -115,49 +88,57 @@ function renderTreeLevel(level, parent) {
 	});
 }
 
-// Отображение файла
-async function loadMarkdown(filePath, parentPath = null) {
+// ===== УБРАЛИ ДУБЛИРОВАНИЕ =====
+
+// Загрузка README один раз
+async function ensureReadmeLoaded() {
+	if (fileCache.has('README.md')) return;
+
+	try {
+		const readmeURL = `https://raw.githubusercontent.com/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/${REPO_CONFIG.branch}/README.md`;
+		const resp = await fetch(readmeURL);
+		if (!resp.ok) return;
+		const text = await resp.text();
+		fileCache.set('README.md', { content: text, title: extractTitle(text) });
+		buildTreeFromReadme(text);
+	} catch (e) {
+		console.error('Ошибка при загрузке README:', e);
+	}
+}
+
+// Унифицированный вывод загруженного файла
+function applyLoadedMarkdown(clean, text, fromHistory = false) {
+	const title = extractTitle(text);
+	fileCache.set(clean, { content: text, title });
+
+	renderTree();
+	setActiveFile(clean);
+	displayMarkdown(text, clean);
+
+	if (!fromHistory) updateURL(clean);
+}
+
+// ===== ГЛАВНАЯ ФУНКЦИЯ ЗАГРУЗКИ =====
+async function loadMarkdown(filePath, parentPath = null, fromHistory = false) {
 	const content = document.getElementById('content');
 	content.innerHTML = '<div class="loading"><span class="spinner"></span>Загрузка...</div>';
-	setActiveFile(filePath);
 	const clean = filePath.replace(/^\//, '');
 
-	// Сначала загрузим основной README для дерева
-	if (!fileCache.has('README.md')) {
-		try {
-			const readmeURL = `https://raw.githubusercontent.com/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/${REPO_CONFIG.branch}/README.md`;
-			const resp = await fetch(readmeURL);
-			if (resp.ok) {
-				const text = await resp.text();
-				const title = extractTitle(text);
-				fileCache.set('README.md', { content: text, title });
-				buildTreeFromReadme(text);
-				updatePageTitle(title);
-			}
-		} catch (e) {
-			console.error('Ошибка при загрузке README:', e);
-		}
-	}
+	await ensureReadmeLoaded();
 
 	if (fileCache.has(clean)) {
-		displayMarkdown(fileCache.get(clean).content, clean);
-		renderTree();
-		updateURL(clean);
-		return;
+		return applyLoadedMarkdown(clean, fileCache.get(clean).content, fromHistory);
 	}
 
 	try {
 		const url = `https://raw.githubusercontent.com/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/${REPO_CONFIG.branch}/${clean}`;
 		const response = await fetch(url);
 		if (!response.ok) throw new Error(`Файл не найден (${response.status})`);
+
 		const text = await response.text();
-		const title = extractTitle(text);
-		fileCache.set(clean, { content: text, title });
-		if (clean !== 'README.md') addFile(clean, title);
-		renderTree();
-		setActiveFile(clean);
-		displayMarkdown(text, clean);
-		updateURL(clean);
+		if (clean !== 'README.md') addFile(clean, extractTitle(text));
+
+		applyLoadedMarkdown(clean, text, fromHistory);
 	} catch (err) {
 		content.innerHTML = `<div class="error"><strong>Ошибка:</strong><br>${err.message}</div>`;
 	}
@@ -171,14 +152,13 @@ function resolvePath(rel, base) {
 		   rel.startsWith('/') ? rel.slice(1) : baseDir ? baseDir + '/' + rel : rel;
 }
 
-// Заголовки → ID
+// Помощники отображения
 function fixHeadings(container) {
 	container.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h => {
 		if (!h.id) h.id = h.textContent.toLowerCase().replace(/[^\w\u0400-\u04FF]+/g, '-').replace(/^-+|-+$/g, '');
 	});
 }
 
-// Изображения
 function fixImages(container, file) {
 	container.querySelectorAll('img').forEach(img => {
 		const src = img.getAttribute('src');
@@ -187,7 +167,6 @@ function fixImages(container, file) {
 	});
 }
 
-// Ссылки
 function fixLinks(container, file) {
 	container.querySelectorAll('a').forEach(link => {
 		const href = link.getAttribute('href');
@@ -198,18 +177,7 @@ function fixLinks(container, file) {
 	});
 }
 
-// Вывод Markdown
-function displayMarkdown(text, file) {
-	const html = marked.parse(preprocessSpecialBlocks(text));
-	const container = document.getElementById('content');
-	container.innerHTML = html;
-	fixHeadings(container);
-	fixLinks(container, file);
-	fixImages(container, file);
-	if (location.hash) setTimeout(() => document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth' }), 100);
-}
-
-// Обработка блоков ([!NOTE] и т.п.)
+// Обработка спец-блоков
 function preprocessSpecialBlocks(markdownText) {
 	const blocks = {
 		NOTE:      { cls: 'markdown-alert-note',      title: 'Заметка',       icon: 'M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z' },
@@ -239,16 +207,46 @@ function preprocessSpecialBlocks(markdownText) {
 	return markdownText;
 }
 
+function displayMarkdown(text, file) {
+	const html = marked.parse(preprocessSpecialBlocks(text));
+	const container = document.getElementById('content');
+	container.innerHTML = html;
+	fixHeadings(container);
+	fixLinks(container, file);
+	fixImages(container, file);
+	if (location.hash) setTimeout(() => document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth' }), 100);
+}
+
 // Активный файл
 function setActiveFile(path) {
 	document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('active'));
 	document.querySelector(`.tree-item[data-path="${path}"]`)?.classList.add('active');
 }
 
-// Hash scroll
-window.addEventListener('hashchange', () => {
-	document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth' });
-});
+// Загрузка из URL
+function loadFromURL() {
+	const params = new URLSearchParams(window.location.search);
+	const file = params.get('file');
+	if (file) return loadMarkdown(decodeURIComponent(file));
+	return loadMarkdown('README.md');
+}
+
+// История браузера
+function handlePopState(event) {
+	if (event.state && event.state.filePath) {
+		loadMarkdown(event.state.filePath, null, true);
+	} else {
+		loadFromURL();
+	}
+}
+
+function initHistoryState() {
+	const params = new URLSearchParams(window.location.search);
+	const file = params.get('file') ? decodeURIComponent(params.get('file')) : 'README.md';
+	if (!history.state || history.state.filePath !== file) {
+		window.history.replaceState({ filePath: file }, '', window.location.href);
+	}
+}
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
@@ -256,17 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
 	document.getElementById('sidebarOpenBtn').onclick = toggleSidebar;
 	document.getElementById('sidebarCloseBtn').onclick = toggleSidebar;
 	document.getElementById('sidebarOverlay').onclick = toggleSidebar;
-	
-	// Обработка кнопок назад/вперед в браузере
-	window.addEventListener('popstate', (event) => {
-		if (event.state && event.state.filePath) {
-			loadMarkdown(event.state.filePath);
-		} else {
-			loadFromURL();
-		}
-	});
-	
-	// Загрузка файла из URL или README по умолчанию
+
+	initHistoryState();
+	window.addEventListener('popstate', handlePopState);
 	loadFromURL();
 });
 
