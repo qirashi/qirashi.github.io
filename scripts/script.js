@@ -52,14 +52,14 @@ function addFile(filePath, title = null) {
 
 // Создание дерева из README
 function buildTreeFromReadme(text) {
-	const title = extractTitle(text) || 'TBGuides';
+	const title = extractTitle(text) || 'Main Documentation';
 	const root = addFile('README.md', title);
 	const linkRegex = /\[([^\]]+)\]\(([^)]+\.md)\)/g;
 	let match;
 	while ((match = linkRegex.exec(text)) !== null) {
 		const [, linkText, linkPath] = match;
 		const fullPath = resolvePath(linkPath, 'README.md');
-		const node = addFile(fullPath, `📘 ${linkText}`);
+		const node = addFile(fullPath, `🔗 ${linkText}`);
 		root.children[fullPath] = true;
 	}
 }
@@ -119,7 +119,7 @@ function applyLoadedMarkdown(clean, text, fromHistory = false) {
 }
 
 // ===== ГЛАВНАЯ ФУНКЦИЯ ЗАГРУЗКИ =====
-async function loadMarkdown(filePath, parentPath = null, fromHistory = false) {
+async function loadMarkdown(filePath, fromHistory = false) {
 	const content = document.getElementById('content');
 	content.innerHTML = '<div class="loading"><span class="spinner"></span>Загрузка...</div>';
 	const clean = filePath.replace(/^\//, '');
