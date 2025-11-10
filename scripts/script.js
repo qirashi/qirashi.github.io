@@ -170,7 +170,16 @@ function fixImages(container, file) {
 function fixLinks(container, file) {
 	container.querySelectorAll('a').forEach(link => {
 		const href = link.getAttribute('href');
-		if (!href || href.startsWith('http') || href.startsWith('javascript:') || href.startsWith('#')) return;
+		if (!href || href.startsWith('http') || href.startsWith('javascript:')) return;
+		if (href.startsWith('#')) {
+			link.onclick = e => {
+				e.preventDefault();
+				const hash = decodeURIComponent(href);
+				const target = document.querySelector(hash);
+				if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			};
+			return;
+		}
 		link.classList.add('md-link');
 		link.href = 'javascript:void(0);';
 		link.onclick = e => { e.preventDefault(); loadMarkdown(resolvePath(href, file), file); };
@@ -214,7 +223,13 @@ function displayMarkdown(text, file) {
 	fixHeadings(container);
 	fixLinks(container, file);
 	fixImages(container, file);
-	if (location.hash) setTimeout(() => document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth' }), 100);
+	if (location.hash) {
+		const hash = decodeURIComponent(location.hash);
+		setTimeout(() => {
+			const target = document.querySelector(hash);
+			if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}, 100);
+	}
 }
 
 // Активный файл
