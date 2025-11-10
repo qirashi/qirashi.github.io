@@ -216,13 +216,49 @@ function preprocessSpecialBlocks(markdownText) {
 	return markdownText;
 }
 
+function addAnchorLinks(container) {
+    const svgPath = 'm7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z';
+
+    const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
+
+    headings.forEach(h => {
+        if (!h.id || h.querySelector('.anchor-link')) return;
+
+        const link = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        link.classList.add('anchor-link');
+        link.setAttribute('viewBox', '0 0 16 16');
+        link.setAttribute('width', '16');
+        link.setAttribute('height', '16');
+        link.innerHTML = `<path d="${svgPath}"></path>`;
+        link.title = 'Скопировать ссылку на заголовок';
+
+        link.addEventListener('click', e => {
+            e.stopPropagation();
+            const currentFile = new URLSearchParams(window.location.search).get('file') || 'README.md';
+            const url = `${location.origin}${location.pathname}?file=${encodeURIComponent(currentFile)}#${h.id}`;
+
+            navigator.clipboard.writeText(url)
+                .then(() => {
+                    link.classList.add('copied');
+                    setTimeout(() => link.classList.remove('copied'), 800);
+                })
+                .catch(err => console.error('Не удалось скопировать ссылку', err));
+        });
+
+        h.appendChild(link);
+    });
+}
+
 function displayMarkdown(text, file) {
 	const html = marked.parse(preprocessSpecialBlocks(text));
 	const container = document.getElementById('content');
 	container.innerHTML = html;
+
 	fixHeadings(container);
+	addAnchorLinks(container);
 	fixLinks(container, file);
 	fixImages(container, file);
+
 	if (location.hash) {
 		const hash = decodeURIComponent(location.hash);
 		setTimeout(() => {

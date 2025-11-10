@@ -486,3 +486,38 @@ body {
 html {
 	scroll-behavior: smooth;
 }
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+    position: relative;
+}
+
+.anchor-link {
+    position: absolute;
+    left: -24px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    opacity: 0;
+    cursor: pointer;
+    fill: #8b949e;
+    transition: opacity 0.2s ease, fill 0.2s ease;
+}
+
+.markdown-body h1:hover .anchor-link,
+.markdown-body h2:hover .anchor-link,
+.markdown-body h3:hover .anchor-link,
+.markdown-body h4:hover .anchor-link,
+.markdown-body h5:hover .anchor-link,
+.markdown-body h6:hover .anchor-link {
+    opacity: 1;
+}
+
+.anchor-link.copied {
+    fill: #58a6ff;
+}
