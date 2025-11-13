@@ -285,7 +285,7 @@ function loadFromURL() {
 // История браузера
 function handlePopState(event) {
 	if (event.state && event.state.filePath) {
-		loadMarkdown(event.state.filePath, null, true);
+		loadMarkdown(event.state.filePath, true);
 	} else {
 		loadFromURL();
 	}
