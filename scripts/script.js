@@ -182,7 +182,7 @@ function fixLinks(container, file) {
 		}
 		link.classList.add('md-link');
 		link.href = 'javascript:void(0);';
-		link.onclick = e => { e.preventDefault(); loadMarkdown(resolvePath(href, file), file); };
+		link.onclick = e => { e.preventDefault(); loadMarkdown(resolvePath(href, file), false); };
 	});
 }
 
