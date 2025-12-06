@@ -141,13 +141,13 @@ body {
 
 .file-tree ul {
     list-style: none;
-    padding-left: 20px;
+    padding-left: 10px;
 }
 
 .tree-item {
-    padding: 6px 8px;
+    padding: 4px 3px;
     margin: 2px 0;
-    border-radius: 6px;
+    border-radius: 5px;
     cursor: pointer;
     transition: all 0.2s;
     font-size: 14px;
@@ -171,7 +171,7 @@ body {
 }
 
 .tree-children {
-    margin-left: 16px;
+    margin-left: 11px;
     border-left: 1px solid #30363d;
     padding-left: 8px;
 }
