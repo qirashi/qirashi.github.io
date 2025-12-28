@@ -313,3 +313,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.addEventListener('resize', updateSidebar);
 window.loadMarkdownFile = loadMarkdown;
+// ========== Сезонный эффект снега ==========
+// Проверка, нужно ли показывать снег (декабрь, январь, февраль)
+function isWinterMonth() {
+	const month = new Date().getMonth();
+	return month === 11 || month === 0 || month === 1; // 11 = December, 0 = January, 1 = February
+}
+
+// Инициализация эффекта снега
+function initSnowEffect() {
+	if (!isWinterMonth()) return;
+
+	const snowflakesContainer = document.getElementById('snowflakes');
+	if (!snowflakesContainer) return;
+
+	const snowflakeSymbol = ['❄', '❅', '❆', '✻'];
+
+	function createSnowflake() {
+		const snowflake = document.createElement('div');
+		const symbol = snowflakeSymbol[Math.floor(Math.random() * snowflakeSymbol.length)];
+		const size = Math.random() * 1.5 + 0.5; // от 0.5em до 2em
+		const delay = Math.random() * 0.15;
+		const duration = Math.random() * 10 + 10; // от 10s до 20s
+		const left = Math.random() * 100;
+		const sway = Math.random() > 0.5;
+
+		snowflake.classList.add('snowflake');
+		if (sway) {
+			snowflake.classList.add('sway-left');
+		}
+		snowflake.textContent = symbol;
+		snowflake.style.left = left + '%';
+		snowflake.style.fontSize = size + 'em';
+		snowflake.style.animationDuration = duration + 's';
+		snowflake.style.animationDelay = delay + 's';
+		snowflake.style.opacity = Math.random() * 0.3 + 0.2;
+
+		snowflakesContainer.appendChild(snowflake);
+
+		// Удалить снежинку после завершения анимации
+		setTimeout(() => {
+			snowflake.remove();
+		}, (duration + delay) * 1000);
+	}
+
+	// Создавать новые снежинки каждые 300ms (можно настроить)
+	const snowInterval = setInterval(() => {
+		if (!isWinterMonth()) {
+			clearInterval(snowInterval);
+			// Очистить все оставшиеся снежинки
+			snowflakesContainer.innerHTML = '';
+			return;
+		}
+		createSnowflake();
+	}, 300);
+
+	// Первоначально создать несколько снежинок
+	for (let i = 0; i < 10; i++) {
+		setTimeout(() => createSnowflake(), i * 100);
+	}
+}
+
+// Запустить эффект снега при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+	initSnowEffect();
+});
+
+// Также запустить, если скрипт загружается после DOM ready
+if (document.readyState === 'loading') {
+	document.addEventListener('DOMContentLoaded', initSnowEffect);
+} else {
+	initSnowEffect();
+}

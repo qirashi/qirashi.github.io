@@ -521,3 +521,50 @@ html {
 .anchor-link.copied {
     fill: #58a6ff;
 }
+/* Эффект снега */
+.snowflakes {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 50;
+    overflow: hidden;
+}
+
+.snowflake {
+    position: absolute;
+    top: -10px;
+    color: #ffffff;
+    opacity: 0.8;
+    user-select: none;
+    font-size: 1.5em;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    animation: fall linear infinite;
+}
+
+@keyframes fall {
+    to {
+        transform: translateY(100vh) translateX(0);
+        opacity: 0;
+    }
+}
+
+@keyframes sway {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    50% {
+        transform: translateX(30px);
+    }
+}
+
+.snowflake.sway-left {
+    animation: fall linear infinite, sway 3s ease-in-out infinite;
+}
+
+.snowflake.sway-right {
+    animation: fall linear infinite;
+    animation-direction: normal;
+}
