@@ -1,82 +1,81 @@
 <!DOCTYPE html>
-<html lang="ru" data-color-mode="dark" data-dark-theme="dark">
+<html lang="ru">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="Гайды qirashi: TBGuides">
+	<meta name="theme-color" content="#0d1117">
 	<title>MD Viewer</title>
 	<link rel="icon" href="favicon.ico" type="image/x-icon">
-	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-dark.min.css">
+	<link rel="preconnect" href="https://raw.githubusercontent.com">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown-dark.min.css">
 	<link rel="stylesheet" href="css/styles.css">
+	<script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js" defer></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.6/purify.min.js" defer></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js" defer></script>
+	<script src="scripts/script.js" defer></script>
 </head>
 <body>
 
-	<button class="sidebar-open-btn" id="sidebarOpenBtn">
-		<div class="hamburger">
+	<button class="sidebar-open-btn" id="sidebarOpenBtn" type="button" aria-label="Открыть меню" aria-controls="sidebar">
+		<span class="hamburger" aria-hidden="true">
 			<span></span>
 			<span></span>
 			<span></span>
-		</div>
+		</span>
 	</button>
 
 	<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-	<!-- Эффект снега -->
 	<div class="snowflakes" id="snowflakes" aria-hidden="true"></div>
 
 	<div class="container">
-		<div class="sidebar" id="sidebar">
-		
+		<aside class="sidebar" id="sidebar">
+
 			<div class="sidebar-header">
-				<div class="header-content">
-					<h2 style="text-align:center" id="repoTitle">📃 MD Viewer</h2>
-				</div>
-				<button class="sidebar-close-btn" id="sidebarCloseBtn" title="Скрыть панель">
-					<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+				<h2 id="repoTitle">📃 MD Viewer</h2>
+				<button class="sidebar-close-btn" id="sidebarCloseBtn" type="button" title="Скрыть панель" aria-label="Скрыть панель">
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 						<path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/>
 					</svg>
 				</button>
 			</div>
-			<div id="fileTree">
+
+			<nav id="fileTree" aria-label="Содержание">
 				<div class="loading">
 					<span class="spinner"></span>Загрузка структуры...
 				</div>
-			</div>
+			</nav>
 
 			<div class="contacts-section">
 				<div class="contacts-header">Контакты</div>
 				<div class="contacts-buttons">
-					<a href="https://t.me/qirashi_squad" class="contact-button telegram" target="_blank">
-						<span class="contact-icon">
-							<svg width="20" height="20" viewBox="0 0 240 240" fill="currentColor">
-								<path d="M120 0C53.73 0 0 53.73 0 120s53.73 120 120 120 120-53.73 120-120S186.27 0 120 0zm58.35 80.46l-20.73 97.72c-1.56 6.89-5.66 8.63-11.45 5.38l-31.64-23.34-15.25 14.65c-1.69 1.69-3.11 3.11-6.36 3.11l2.28-32.55 59.33-53.58c2.58-2.28-.57-3.56-4-1.28l-73.36 46.16-31.56-9.86c-6.84-2.11-6.95-6.84 1.44-10.13l121.44-46.71c5.66-2.28 10.62 1.37 8.9 10.15z"/>
-							</svg>
-						</span>
-						<span class="contact-text">Telegram</span>
+					<a href="https://t.me/qirashi_squad" class="contact-button telegram" target="_blank" rel="noopener">
+						<svg width="20" height="20" viewBox="0 0 240 240" fill="currentColor" aria-hidden="true">
+							<path d="M120 0C53.73 0 0 53.73 0 120s53.73 120 120 120 120-53.73 120-120S186.27 0 120 0zm58.35 80.46l-20.73 97.72c-1.56 6.89-5.66 8.63-11.45 5.38l-31.64-23.34-15.25 14.65c-1.69 1.69-3.11 3.11-6.36 3.11l2.28-32.55 59.33-53.58c2.58-2.28-.57-3.56-4-1.28l-73.36 46.16-31.56-9.86c-6.84-2.11-6.95-6.84 1.44-10.13l121.44-46.71c5.66-2.28 10.62 1.37 8.9 10.15z"/>
+						</svg>
+						Telegram
 					</a>
-					<a href="https://github.com/qirashi" class="contact-button github" target="_blank">
-						<span class="contact-icon">
-							<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-								<path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.263.82-.583 0-.288-.01-1.05-.015-2.06-3.338.725-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.089-.744.082-.729.082-.729 1.205.084 1.84 1.237 1.84 1.237 1.07 1.833 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.604-2.665-.303-5.466-1.333-5.466-5.932 0-1.31.467-2.382 1.235-3.222-.123-.303-.535-1.523.117-3.176 0 0 1.008-.322 3.3 1.23a11.45 11.45 0 013-.404c1.02.004 2.045.138 3 .404 2.29-1.552 3.297-1.23 3.297-1.23.654 1.653.243 2.873.12 3.176.77.84 1.233 1.912 1.233 3.222 0 4.61-2.805 5.625-5.475 5.922.43.37.813 1.096.813 2.21 0 1.596-.015 2.884-.015 3.274 0 .323.216.699.825.58C20.565 21.796 24 17.298 24 12c0-6.63-5.37-12-12-12z"/>
-							</svg>
-						</span>
-						<span class="contact-text">GitHub</span>
+					<a href="https://github.com/qirashi" class="contact-button github" target="_blank" rel="noopener">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+							<path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.263.82-.583 0-.288-.01-1.05-.015-2.06-3.338.725-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.089-.744.082-.729.082-.729 1.205.084 1.84 1.237 1.84 1.237 1.07 1.833 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.604-2.665-.303-5.466-1.333-5.466-5.932 0-1.31.467-2.382 1.235-3.222-.123-.303-.535-1.523.117-3.176 0 0 1.008-.322 3.3 1.23a11.45 11.45 0 013-.404c1.02.004 2.045.138 3 .404 2.29-1.552 3.297-1.23 3.297-1.23.654 1.653.243 2.873.12 3.176.77.84 1.233 1.912 1.233 3.222 0 4.61-2.805 5.625-5.475 5.922.43.37.813 1.096.813 2.21 0 1.596-.015 2.884-.015 3.274 0 .323.216.699.825.58C20.565 21.796 24 17.298 24 12c0-6.63-5.37-12-12-12z"/>
+						</svg>
+						GitHub
 					</a>
 				</div>
 			</div>
-			
-		</div>
-		
-		<div class="content" id="contentArea">
+
+		</aside>
+
+		<main class="content" id="contentArea">
 			<article class="markdown-body" id="markdownBody">
 				<div id="content">
 					<p>Загрузка README...</p>
 				</div>
 			</article>
-		</div>
+		</main>
 	</div>
-
-	<script src="scripts/script.js"></script>
 
 </body>
 </html>

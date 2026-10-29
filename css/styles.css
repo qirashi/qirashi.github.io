@@ -4,34 +4,40 @@
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: #0d1117;
     color: #c9d1d9;
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
-/* Общие стили для кнопок */
 .sidebar-open-btn,
 .sidebar-close-btn {
-    background: #161b22;
-    border: 1px solid #30363d;
+    border: 1px solid;
     border-radius: 6px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .sidebar-open-btn {
+    display: none;
     position: fixed;
     top: 20px;
     left: 20px;
     z-index: 1001;
-    padding: 10px;
     width: 40px;
     height: 40px;
+    background: #161b22;
+    border-color: #30363d;
+    animation: fadeIn 0.3s ease;
 }
 
 .sidebar-open-btn:hover {
@@ -43,7 +49,6 @@ body {
     background: rgba(101, 109, 118, 0.1);
     border-color: rgba(101, 109, 118, 0.3);
     color: #8b949e;
-    padding: 6px;
     width: 32px;
     height: 32px;
     flex-shrink: 0;
@@ -55,7 +60,6 @@ body {
     color: #c9d1d9;
 }
 
-/* Хамбургер меню */
 .hamburger {
     display: flex;
     flex-direction: column;
@@ -65,39 +69,43 @@ body {
 }
 
 .hamburger span {
-    display: block;
     height: 2px;
-    width: 100%;
     background-color: #c9d1d9;
     border-radius: 1px;
-    transition: all 0.3s ease;
 }
 
-/* Основной контейнер и сайдбар */
 .container {
     display: flex;
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .sidebar {
+    flex: 0 0 350px;
     width: 350px;
     background: #161b22;
     border-right: 1px solid #30363d;
     padding: 20px;
-    overflow-y: auto;
     position: sticky;
     top: 0;
     height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
-    transition: transform 0.3s ease;
+    transition: margin-left 0.3s ease, visibility 0.3s;
 }
 
-.sidebar.hidden {
-    transform: translateX(-100%);
+body.sidebar-hidden .sidebar {
+    margin-left: -350px;
+    visibility: hidden;
 }
 
-/* Заголовок сайдбара */
+body.sidebar-hidden .sidebar-open-btn {
+    display: flex;
+}
+
 .sidebar-header {
     display: flex;
     align-items: flex-start;
@@ -108,53 +116,60 @@ body {
     gap: 15px;
 }
 
-.header-content {
+#repoTitle {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    font-size: 1.5em;
+    margin-bottom: 5px;
+    overflow-wrap: break-word;
+}
+
+.content {
     flex: 1;
     min-width: 0;
 }
 
-/* Контент и разметка */
-.content {
-    flex: 1;
-    overflow-y: auto;
-    transition: all 0.3s ease;
-}
-
 .markdown-body {
-    background-color: #0d1117;
     color: #c9d1d9;
-    box-sizing: border-box;
-    min-width: 200px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 45px;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
 }
 
-/* Древовидное меню */
-.file-tree {
-    list-style: none;
-    margin-top: 15px;
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+    scroll-margin-top: 16px;
+}
+
+#fileTree {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
 }
 
+.file-tree,
 .file-tree ul {
     list-style: none;
-    padding-left: 10px;
+}
+
+.file-tree {
+    margin-top: 15px;
 }
 
 .tree-item {
-    padding: 4px 3px;
+    display: block;
+    padding: 4px 6px;
     margin: 2px 0;
     border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.2s;
     font-size: 14px;
-    display: flex;
-    align-items: center;
     color: #c9d1d9;
-    user-select: none;
+    text-decoration: none;
+    transition: background-color 0.2s;
 }
 
 .tree-item:hover {
@@ -166,17 +181,12 @@ body {
     color: white;
 }
 
-.tree-item.folder {
-    font-weight: 600;
-}
-
 .tree-children {
     margin-left: 11px;
     border-left: 1px solid #30363d;
     padding-left: 8px;
 }
 
-/* Состояния и утилиты */
 .loading {
     color: #8b949e;
     font-style: italic;
@@ -193,21 +203,28 @@ body {
     margin: 16px 0;
 }
 
-#repoTitle {
-    font-size: 1.5em;
-    margin-bottom: 5px;
-    word-wrap: break-word;
+.spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #8b949e;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
 }
 
-#repoSubtitle {
-    color: #8b949e;
-    font-size: 14px;
-    line-height: 1.4;
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
-/* Блок контактов */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 .contacts-section {
-    margin-top: auto;
+    margin-top: 20px;
     padding-top: 20px;
     border-top: 1px solid #30363d;
 }
@@ -230,18 +247,22 @@ body {
 .contact-button {
     display: flex;
     align-items: center;
+    gap: 10px;
     padding: 10px 12px;
     border-radius: 6px;
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
+    border: 1px solid;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .contact-button:hover {
     transform: translateY(-1px);
-    text-decoration: none;
+}
+
+.contact-button svg {
+    flex-shrink: 0;
 }
 
 .contact-button.telegram {
@@ -266,255 +287,36 @@ body {
     border-color: rgba(101, 109, 118, 0.5);
 }
 
-.contact-icon {
-    font-size: 16px;
-    margin-right: 10px;
-    width: 20px;
-    text-align: center;
-}
-
-.contact-text {
-    flex: 1;
-}
-
-/* Оверлей */
 .sidebar-overlay {
     display: none;
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: rgba(0, 0, 0, 0.5);
     z-index: 999;
-    transition: opacity 0.3s ease;
-}
-
-.sidebar-overlay.visible {
-    display: block;
     animation: fadeIn 0.3s ease;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-/* Ссылки и индикаторы */
-.md-link {
-    color: #58a6ff;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.md-link:hover {
-    text-decoration: underline;
-}
-
-.spinner {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border: 2px solid #8b949e;
-    border-radius: 50%;
-    border-top-color: transparent;
-    animation: spin 1s linear infinite;
+.markdown-alert-title .octicon {
     margin-right: 8px;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* Alert-блоки */
-.markdown-alert {
-    padding: 12px 16px;
-    margin: 1em 0;
-    border-left: 4px solid;
-    font-size: 14px;
-    line-height: 1.5;
-}
-
-.markdown-alert-title {
-    display: flex;
-    align-items: center;
-    font-weight: 600;
-    gap: 6px;
-    margin-bottom: 8px;
-}
-
-.markdown-alert-title svg {
-    fill: currentColor;
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-}
-
-/* Типы alert-блоков */
-.markdown-alert-note {
-    border-left-color: #0078ff;
-    background-color: rgba(0, 120, 255, 0.1);
-}
-.markdown-alert-note .markdown-alert-title {
-    color: #0078ff;
-}
-
-.markdown-alert-tip {
-    border-left-color: #00a23a;
-    background-color: rgba(0, 162, 58, 0.1);
-}
-.markdown-alert-tip .markdown-alert-title {
-    color: #00a23a;
-}
-
-.markdown-alert-important {
-    border-left-color: #b04bff;
-    background-color: rgba(176, 75, 255, 0.1);
-}
-.markdown-alert-important .markdown-alert-title {
-    color: #b04bff;
-}
-
-.markdown-alert-warning {
-    border-left-color: #d29922;
-    background-color: rgba(210, 153, 34, 0.1);
-}
-.markdown-alert-warning .markdown-alert-title {
-    color: #d29922;
-}
-
-.markdown-alert-caution {
-    border-left-color: #da3633;
-    background-color: rgba(218, 54, 51, 0.1);
-}
-.markdown-alert-caution .markdown-alert-title {
-    color: #da3633;
-}
-
-/* Убираем стандартный блок quote для alert-блоков */
-.markdown-body blockquote:has(.markdown-alert) {
-    border-left: none !important;
-    padding-left: 0 !important;
-    margin-left: 0 !important;
-    background: transparent !important;
-}
-
-.markdown-alert p {
-    margin: 8px 0;
-    line-height: 1.5;
-}
-
-.markdown-alert p:first-child {
-    margin-top: 0;
-}
-
-.markdown-alert p:last-child {
-    margin-bottom: 0;
-}
-
-/* Адаптивность */
-@media (max-width: 768px) {
-    .sidebar-open-btn {
-        display: flex;
-    }
-
-    .sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 1000;
-        transform: translateX(-100%);
-        width: 300px;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .sidebar:not(.hidden) {
-        transform: translateX(0);
-    }
-
-    .markdown-body {
-        padding: 60px 20px 20px;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .sidebar-close-btn {
-        display: flex;
-    }
-}
-
-@media (min-width: 1000px) {
-    .sidebar-open-btn {
-        display: none;
-    }
-
-    .sidebar-close-btn {
-        display: flex;
-    }
-    
-    .markdown-body {
-        max-width: 1200px;
-        padding: 45px 100px;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    
-    .sidebar:not(.hidden) + .content .markdown-body {
-        transform: translateX(0);
-    }
-    
-    .sidebar.hidden + .content .markdown-body {
-        transform: translateX(-100px);
-    }
-    
-    .sidebar.hidden + .content .sidebar-open-btn {
-        display: flex;
-        animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateX(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-}
-
-html {
-	scroll-behavior: smooth;
-}
-
-.markdown-body h1,
-.markdown-body h2,
-.markdown-body h3,
-.markdown-body h4,
-.markdown-body h5,
-.markdown-body h6 {
-    position: relative;
-}
+.markdown-alert-note      { background-color: rgba(31, 111, 235, 0.1); }
+.markdown-alert-tip       { background-color: rgba(35, 134, 54, 0.1); }
+.markdown-alert-important { background-color: rgba(137, 87, 229, 0.1); }
+.markdown-alert-warning   { background-color: rgba(158, 106, 3, 0.1); }
+.markdown-alert-caution   { background-color: rgba(218, 54, 51, 0.1); }
 
 .anchor-link {
-    position: absolute;
-    left: -24px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
+    display: inline-flex;
+    margin-left: 8px;
+    vertical-align: middle;
     opacity: 0;
-    cursor: pointer;
     fill: #8b949e;
     transition: opacity 0.2s ease, fill 0.2s ease;
 }
 
-.markdown-body h1:hover .anchor-link,
-.markdown-body h2:hover .anchor-link,
-.markdown-body h3:hover .anchor-link,
-.markdown-body h4:hover .anchor-link,
-.markdown-body h5:hover .anchor-link,
-.markdown-body h6:hover .anchor-link {
+.markdown-body :is(h1, h2, h3, h4, h5, h6):hover .anchor-link,
+.anchor-link:focus-visible {
     opacity: 1;
 }
 
@@ -522,11 +324,153 @@ html {
     fill: #58a6ff;
 }
 
-/* Супер-компактная версия */
+.code-block {
+    position: relative;
+}
+
+.markdown-body pre code.hljs {
+    padding: 0;
+    background: transparent;
+    overflow: visible;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #212830;
+    border: 1px solid #3d444d;
+    border-radius: 6px;
+    color: #9198a1;
+    fill: currentColor;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.code-block:hover .copy-btn,
+.copy-btn:focus-visible {
+    opacity: 1;
+}
+
+.copy-btn:hover {
+    color: #c9d1d9;
+    border-color: #58a6ff;
+}
+
+.copy-btn .icon-check,
+.copy-btn.copied .icon-copy {
+    display: none;
+}
+
+.copy-btn.copied .icon-check {
+    display: block;
+}
+
+.copy-btn.copied {
+    opacity: 1;
+    color: #3fb950;
+    border-color: #3fb950;
+}
+
+.file-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid #30363d;
+    color: #8b949e;
+    font-size: 14px;
+}
+
+.file-meta a {
+    margin-left: auto;
+}
+
+@media (hover: none) {
+    .anchor-link {
+        opacity: 0.5;
+    }
+
+    .copy-btn {
+        opacity: 1;
+    }
+}
+
+@media (max-width: 999px) {
+    body.sidebar-hidden .markdown-body {
+        padding-top: 80px;
+    }
+}
+
+@media (min-width: 1000px) {
+    .markdown-body {
+        padding: 45px 100px;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar-open-btn {
+        display: flex;
+    }
+
+    body.sidebar-open .sidebar-open-btn {
+        display: none;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: 0;
+        z-index: 1000;
+        width: min(300px, 85vw);
+        transform: translateX(-100%);
+        visibility: hidden;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
+    }
+
+    body.sidebar-open .sidebar {
+        transform: none;
+        visibility: visible;
+    }
+
+    body.sidebar-open .sidebar-overlay {
+        display: block;
+    }
+
+    .markdown-body {
+        padding: 76px 16px 24px;
+    }
+
+    .markdown-body h1,
+    .markdown-body h2,
+    .markdown-body h3,
+    .markdown-body h4,
+    .markdown-body h5,
+    .markdown-body h6 {
+        scroll-margin-top: 76px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    * {
+        transition: none !important;
+    }
+}
+
 .snowflakes {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    inset: 0;
     pointer-events: none;
     z-index: 44;
     overflow: hidden;
@@ -534,26 +478,22 @@ html {
 
 .snowflake {
     position: absolute;
-    color: white;
-    font-size: 1.5em;
     top: -50px;
+    color: white;
     text-shadow: 0 0 5px white;
-    animation: snowfall linear infinite;
+    animation: snowfall linear forwards;
 }
 
 @keyframes snowfall {
     0% {
-        transform: translateY(-50px) translateX(0px) rotate(0deg);
+        transform: translate(0, 0) rotate(0deg);
         opacity: 0;
     }
     10% {
-        opacity: 0.6;
+        opacity: var(--opacity, 0.6);
     }
     100% {
-        transform: 
-            translateY(100vh) 
-            translateX(calc(50px * sin(360deg)))
-            rotate(360deg);
+        transform: translate(var(--drift, 0), calc(100vh + 50px)) rotate(360deg);
         opacity: 0;
     }
 }
