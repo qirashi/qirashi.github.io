@@ -427,28 +427,58 @@ history.replaceState({ ...history.state, filePath: pathFromURL() }, '');
 loadTree();
 loadMarkdown(pathFromURL(), { push: false, hash: location.hash.slice(1), scrollY: initialScroll });
 
-function initSnowEffect() {
-	const container = document.getElementById('snowflakes');
-	const symbols = ['❄', '❅', '❆', '✻'];
+const SEASONS = [
+	{
+		name: 'winter',
+		isActive: month => month === 11 || month <= 1,
+		symbols: ['❄', '❅', '❆', '✻'],
+		size: [0.5, 2],
+		spin: [360, 360],
+		interval: 300
+	},
+	{
+		name: 'halloween',
+		isActive: (month, day) => (month === 9 && day >= 24) || (month === 10 && day === 1),
+		symbols: ['🦇', '🎃', '🕸️', '🍂', '🍂'],
+		icon: '🎃',
+		size: [1, 2],
+		spin: [-60, 60],
+		interval: 900
+	}
+];
 
-	function createSnowflake() {
+const random = (min, max) => Math.random() * (max - min) + min;
+
+function initSeason(season) {
+	document.body.classList.add(`season-${season.name}`);
+	if (season.icon) {
+		const title = document.getElementById('repoTitle');
+		title.textContent = title.textContent.replace('📃', season.icon);
+	}
+	if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+	const container = document.getElementById('particles');
+	const interval = season.interval * (mobileQuery.matches ? 2 : 1);
+
+	function createParticle() {
 		if (document.hidden) return;
-		const flake = document.createElement('div');
-		flake.className = 'snowflake';
-		flake.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-		flake.style.left = `${Math.random() * 100}%`;
-		flake.style.fontSize = `${Math.random() * 1.5 + 0.5}em`;
-		flake.style.animationDuration = `${Math.random() * 15 + 10}s`;
-		flake.style.setProperty('--drift', `${Math.random() * 100 - 50}px`);
-		flake.style.setProperty('--opacity', Math.random() * 0.4 + 0.3);
-		flake.addEventListener('animationend', () => flake.remove());
-		container.appendChild(flake);
+		const particle = document.createElement('div');
+		particle.className = 'particle';
+		particle.textContent = season.symbols[Math.floor(Math.random() * season.symbols.length)];
+		particle.style.left = `${random(0, 100)}%`;
+		particle.style.fontSize = `${random(...season.size)}em`;
+		particle.style.animationDuration = `${random(10, 25)}s`;
+		particle.style.setProperty('--drift', `${random(-50, 50)}px`);
+		particle.style.setProperty('--spin', `${random(...season.spin)}deg`);
+		particle.style.setProperty('--opacity', random(0.3, 0.7));
+		particle.addEventListener('animationend', () => particle.remove());
+		container.appendChild(particle);
 	}
 
-	setInterval(createSnowflake, mobileQuery.matches ? 600 : 300);
-	for (let i = 0; i < 15; i++) setTimeout(createSnowflake, i * 200);
+	setInterval(createParticle, interval);
+	for (let i = 0; i < Math.ceil(4500 / season.interval); i++) setTimeout(createParticle, i * 200);
 }
 
-const month = new Date().getMonth();
-const isWinter = month === 11 || month <= 1;
-if (isWinter && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) initSnowEffect();
+const today = new Date();
+const season = SEASONS.find(s => s.isActive(today.getMonth(), today.getDate()));
+if (season) initSeason(season);

@@ -9,6 +9,8 @@ html {
 }
 
 body {
+    --accent: #58a6ff;
+    --accent-bg: #1c6b48;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: #0d1117;
     color: #c9d1d9;
@@ -42,7 +44,7 @@ body {
 
 .sidebar-open-btn:hover {
     background: #1c2128;
-    border-color: #58a6ff;
+    border-color: var(--accent);
 }
 
 .sidebar-close-btn {
@@ -177,7 +179,7 @@ body.sidebar-hidden .sidebar-open-btn {
 }
 
 .tree-item.active {
-    background-color: #1c6b48;
+    background-color: var(--accent-bg);
     color: white;
 }
 
@@ -321,7 +323,7 @@ body.sidebar-hidden .sidebar-open-btn {
 }
 
 .anchor-link.copied {
-    fill: #58a6ff;
+    fill: var(--accent);
 }
 
 .code-block {
@@ -360,7 +362,7 @@ body.sidebar-hidden .sidebar-open-btn {
 
 .copy-btn:hover {
     color: #c9d1d9;
-    border-color: #58a6ff;
+    border-color: var(--accent);
 }
 
 .copy-btn .icon-check,
@@ -468,7 +470,16 @@ body.sidebar-hidden .sidebar-open-btn {
     }
 }
 
-.snowflakes {
+body.season-halloween {
+    --accent: #f0883e;
+    --accent-bg: #a3480f;
+}
+
+body.season-halloween .markdown-body a {
+    color: var(--accent);
+}
+
+.particles {
     position: fixed;
     inset: 0;
     pointer-events: none;
@@ -476,15 +487,19 @@ body.sidebar-hidden .sidebar-open-btn {
     overflow: hidden;
 }
 
-.snowflake {
+.particle {
     position: absolute;
     top: -50px;
     color: white;
     text-shadow: 0 0 5px white;
-    animation: snowfall linear forwards;
+    animation: fall linear forwards;
 }
 
-@keyframes snowfall {
+.season-halloween .particle {
+    text-shadow: 0 0 10px rgba(240, 136, 62, 0.6);
+}
+
+@keyframes fall {
     0% {
         transform: translate(0, 0) rotate(0deg);
         opacity: 0;
@@ -493,7 +508,7 @@ body.sidebar-hidden .sidebar-open-btn {
         opacity: var(--opacity, 0.6);
     }
     100% {
-        transform: translate(var(--drift, 0), calc(100vh + 50px)) rotate(360deg);
+        transform: translate(var(--drift, 0), calc(100vh + 50px)) rotate(var(--spin, 360deg));
         opacity: 0;
     }
 }
